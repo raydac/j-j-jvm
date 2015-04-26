@@ -10,6 +10,8 @@
   <artifactId>j-j-jvm-stubgen</artifactId>
   <packaging>jar</packaging>
 
+  <description>Small GUI Tool to generate stubs for J-J-JVM interpreter</description>
+
   <dependencies>
     <dependency>
       <groupId>org.apache.bcel</groupId>

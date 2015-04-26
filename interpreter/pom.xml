@@ -11,6 +11,8 @@
   <packaging>jar</packaging>
   <version>${main.version}</version>
   
+  <description>yet another JVM interpreter written in Java</description>
+  
   <profiles>
     <profile>
       <id>Coverage</id>
