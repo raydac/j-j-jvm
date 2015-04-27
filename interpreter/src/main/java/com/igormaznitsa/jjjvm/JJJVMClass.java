@@ -292,16 +292,29 @@ public final class JJJVMClass {
   }
 
   private Object _invoke(final JJJVMObject instance, final JJJVMClassMethod method, final Object[] args, final int initialStackOffset, final Object[] stack, final Object[] vars) throws Throwable {
-    // init registers
-    int regSP = initialStackOffset;
-    int regPC = 0;
-
-    // create the method stack and local vaiable tables
-    final Object[] localMethodStack = stack == null || stack.length < method.getMaxStackDepth() ? new Object[method.getMaxStackDepth()] : stack;
     final Object[] localVars = vars == null || vars.length < method.getMaxLocals() ? new Object[method.getMaxLocals()] : vars;
 
+    final Object[] localMethodStack;
+    int regPC = 0;
+    int regSP;
+
+    if (stack == null) {
+      localMethodStack = new Object[method.getMaxStackDepth()];
+      regSP = 0;
+    }
+    else {
+      if (stack.length - initialStackOffset >= method.getMaxStackDepth()) {
+        localMethodStack = stack;
+        regSP = initialStackOffset;
+      }
+      else {
+        localMethodStack = new Object[method.getMaxStackDepth()];
+        regSP = 0;
+      }
+    }
+
     // the variable contains the first local variable index contains the first method argument
-    int firstWorkArgumentIndex = 0;
+    int firstArgument = 0;
 
     final int flags = method.getFlags();
 
@@ -323,14 +336,13 @@ public final class JJJVMClass {
       // place "this"
       localVars[0] = instance;
       // the first argument will be at the index 1
-      firstWorkArgumentIndex = 1;
+      firstArgument = 1;
     }
 
     // fill the method stack with arguments
     if (args != null) {
       for (final Object arg : args) {
-        localVars[firstWorkArgumentIndex] = arg;
-        firstWorkArgumentIndex++;
+        localVars[firstArgument++] = arg;
       }
     }
 
@@ -1600,7 +1612,14 @@ public final class JJJVMClass {
             final String klazzName = record.getClassName();
 
             if (!(klazzName.equals("java/lang/Object") && methodName.equals("<init>") && signature.equals("()V"))) {
-              final Object resolvedKlazz = this.provider.resolveClass(klazzName);
+              final Object resolvedKlazz;
+              if (instruction == 185) {
+                // INOKEINTERFACE
+                resolvedKlazz = objInstance instanceof JJJVMObject ? ((JJJVMObject) objInstance).getKlazz() : this.provider.resolveClass(objInstance.getClass().getName().replace('.', '/'));
+              }
+              else {
+                resolvedKlazz = klazzName.equals(this.getJvmClassName()) ? this : this.provider.resolveClass(klazzName);
+              }
               Object result = null;
               if (resolvedKlazz instanceof JJJVMClass) {
                 final JJJVMClass jjjvmclazz = (JJJVMClass) resolvedKlazz;
@@ -1608,11 +1627,19 @@ public final class JJJVMClass {
                   result = this._invoke((JJJVMObject) objInstance, jjjvmclazz.findMethod(methodName, signature), argsArray, regSP, localMethodStack, null);
                 }
                 else {
-                  result = jjjvmclazz.invoke((JJJVMObject) objInstance, jjjvmclazz.findMethod(methodName, signature), args, null, null);
+                  result = jjjvmclazz.invoke((JJJVMObject) objInstance, jjjvmclazz.findMethod(methodName, signature), argsArray, null, null);
                 }
               }
               else {
-                result = this.provider.invoke(this, objInstance, klazzName, methodName, signature, args);
+                result = this.provider.invoke(this, objInstance, klazzName, methodName, signature, argsArray);
+                if (result != null && "<init>".equals(methodName)) {
+                  // replace all instances by new one
+                  for (int i = 0; i < localMethodStack.length; i++) {
+                    if (localMethodStack[i] == objInstance) {
+                      localMethodStack[i] = result;
+                    }
+                  }
+                }
               }
 
               if (signature.charAt(signature.length() - 1) != JJJVMClassMethod.TYPE_VOID) {

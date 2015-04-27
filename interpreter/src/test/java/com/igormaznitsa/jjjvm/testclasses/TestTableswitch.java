@@ -2,7 +2,7 @@ package com.igormaznitsa.jjjvm.testclasses;
 
 import java.io.Serializable;
 
-public final class TestKlazz1 implements Serializable{
+public final class TestTableswitch implements Serializable{
   private static final long serialVersionUID = -772791003019300556L;
   
   public static int sfield1 = 1234;
@@ -24,7 +24,7 @@ public final class TestKlazz1 implements Serializable{
     }
   }
   
-  public TestKlazz1(final double dbl){
+  public TestTableswitch(final double dbl){
     this.field4 = dbl;
   }
   

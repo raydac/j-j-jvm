@@ -3,8 +3,7 @@ package com.igormaznitsa.jjjvm;
 import static com.igormaznitsa.jjjvm.TestHelper.CONST_CLASS;
 import com.igormaznitsa.jjjvm.impl.JSEProviderImpl;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.IIOException;
@@ -1328,9 +1327,9 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   }
   
   @Test
-  public void testIntegration_TestKlazz1() throws Throwable {
+  public void testIntegration_TestTableswitch() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
-    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestKlazz1");
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestTableswitch");
     
     assertTrue(testKlazz.canBeCastTo("java/lang/Object"));
     assertFalse(testKlazz.canBeCastTo("java/util/Map"));
@@ -1345,12 +1344,12 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     final JJJVMObject obj = testKlazz.newInstance("(D)V", new Object[]{arg}, null, null);
     assertNotNull(obj);
     assertSame(testKlazz, obj.getKlazz());
-    assertSame(arg, testKlazz.findDeclaredField("field4").get(obj));
-    assertEquals(Integer.valueOf(9876), testKlazz.findDeclaredField("field1").get(obj));
-    assertEquals(Long.valueOf(6666L), testKlazz.findDeclaredField("field2").get(obj));
-    assertEquals("Ugums", testKlazz.findDeclaredField("field3").get(obj));
+    assertSame(arg, testKlazz.findField("field4").get(obj));
+    assertEquals(Integer.valueOf(9876), testKlazz.findField("field1").get(obj));
+    assertEquals(Long.valueOf(6666L), testKlazz.findField("field2").get(obj));
+    assertEquals("Ugums", testKlazz.findField("field3").get(obj));
   
-    final JJJVMClassMethod doCalcMethod = testKlazz.findDeclaredMethod("doCalc", "(D)D");
+    final JJJVMClassMethod doCalcMethod = testKlazz.findMethod("doCalc", "(D)D");
     
     assertEquals(new Double(11233.0932d + -652374.23d / 34 - (23 * -652374.23d)), testKlazz.invoke(obj, doCalcMethod, new Object[]{new Double(-652374.23d)}, null, null));
   
@@ -1361,6 +1360,41 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     assertEquals(new Double(8.0d),testKlazz.invoke(obj, doTableSwitchMethod, new Object[]{2L}, null, null));
     assertEquals(new Double(81.0d),testKlazz.invoke(obj, doTableSwitchMethod, new Object[]{9L}, null, null));
     assertEquals(new Double(93*93),testKlazz.invoke(obj, doTableSwitchMethod, new Object[]{93L}, null, null));
+  }
+
+  @Test
+  public void testIntegration_TestInvoke() throws Throwable {
+    final JJJVMProvider provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInvoke");
+
+    final JJJVMObject obj = testKlazz.newInstance(true);
+
+    final JJJVMClassMethod calc = testKlazz.findMethod("calc", "(I)I");
+    final JJJVMClassMethod calcLong = testKlazz.findMethod("calc", "(J)J");
+    assertEquals((125*125)/2+10,testKlazz.invoke(obj, calc, new Object[]{new Integer(125)}, null, null));
+    assertEquals((125L*125L)/2L+10L,testKlazz.invoke(obj, calcLong, new Object[]{new Long(125L)}, null, null));
+  }
+
+  @Test
+  public void testIntegration_TestVector() throws Throwable {
+    final JJJVMProvider provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestVector");
+
+    final JJJVMObject obj = testKlazz.newInstance(true);
+
+    final JJJVMClassMethod fillVector = testKlazz.findMethod("fillVector", "(Ljava/util/Vector;)Ljava/util/Vector;");
+    final JJJVMClassMethod makeVector = testKlazz.findMethod("makeVector", "()Ljava/util/Vector;");
+    
+    final Vector theVector = new Vector();
+    theVector.add("1");
+    theVector.add("2");
+    theVector.add("3");
+    
+    final Vector result = (Vector)testKlazz.invoke(obj, fillVector, new Object[]{theVector}, null, null);
+    assertSame(theVector, result);
+    assertArrayEquals(new Object[]{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14}, result.toArray());
+    assertArrayEquals(new Object[]{0,1,2,3,4,5,6,7,8,9}, ((Vector) testKlazz.invoke(obj, makeVector, null, null, null)).toArray());
+  
   }
 
   @Test

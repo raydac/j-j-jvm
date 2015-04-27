@@ -69,14 +69,11 @@ public class JSEProviderImpl implements JJJVMProvider {
 
   public Object allocate(final JJJVMClass caller, final String jvmFormattedClassName) throws Throwable {
     final Object klazz = resolveClass(jvmFormattedClassName);
-    if (klazz == Class.class) {
-      return UNSAFE.allocateInstance((Class) klazz);
-    }
-    else if (klazz == JJJVMClass.class) {
+    if (klazz == JJJVMClass.class) {
       return ((JJJVMClass) klazz).newInstance(false);
     }
     else {
-      throw new Error("Illegal object [" + klazz + ']');
+      return UNSAFE.allocateInstance((Class) klazz);
     }
   }
 
@@ -97,8 +94,14 @@ public class JSEProviderImpl implements JJJVMProvider {
       }
 
       final Class klazz = (Class) resolvedClass;
-      final Method method = klazz.getMethod(methodName, paramClasses);
-      return method.invoke(instance, arguments);
+      if ("<init>".equals(methodName)){
+        // constructor
+        final Constructor constructor = klazz.getConstructor(paramClasses);
+        return constructor.newInstance(arguments);
+      }else{
+        final Method method = klazz.getMethod(methodName, paramClasses);
+        return method.invoke(instance, arguments);
+      }
     }
   }
 
@@ -286,6 +289,7 @@ public class JSEProviderImpl implements JJJVMProvider {
 
       if (clazzName) {
         if (chr == ';') {
+          clazzName = false;
           final String className = klazzNameBuffer.toString();
           klazzNameBuffer.setLength(0);
 
@@ -303,57 +307,58 @@ public class JSEProviderImpl implements JJJVMProvider {
           klazzNameBuffer.append(chr);
         }
       }
-
-      switch (chr) {
-        case '(':
-          started = true;
-          dimensions = 0;
-          break;
-        case ')':
-          started = false;
-          dimensions = 0;
-          i = signature.length();
-          break;
-        case 'L':
-          clazzName = true;
-          break;
-        case 'I':
-          resultList.add(dimensions == 0 ? int.class : makeMultidimensionArrayClass(int.class, dimensions));
-          dimensions = 0;
-          break;
-        case 'B':
-          resultList.add(dimensions == 0 ? byte.class : makeMultidimensionArrayClass(byte.class, dimensions));
-          dimensions = 0;
-          break;
-        case 'C':
-          resultList.add(dimensions == 0 ? char.class : makeMultidimensionArrayClass(char.class, dimensions));
-          dimensions = 0;
-          break;
-        case 'D':
-          resultList.add(dimensions == 0 ? double.class : makeMultidimensionArrayClass(double.class, dimensions));
-          dimensions = 0;
-          break;
-        case 'F':
-          resultList.add(dimensions == 0 ? float.class : makeMultidimensionArrayClass(float.class, dimensions));
-          dimensions = 0;
-          break;
-        case 'J':
-          resultList.add(dimensions == 0 ? long.class : makeMultidimensionArrayClass(long.class, dimensions));
-          dimensions = 0;
-          break;
-        case 'S':
-          resultList.add(dimensions == 0 ? short.class : makeMultidimensionArrayClass(short.class, dimensions));
-          dimensions = 0;
-          break;
-        case 'Z':
-          resultList.add(dimensions == 0 ? boolean.class : makeMultidimensionArrayClass(boolean.class, dimensions));
-          dimensions = 0;
-          break;
-        case '[':
-          dimensions++;
-          break;
-        default:
-          throw new Error("unexpected char [" + chr + ']');
+      else {
+        switch (chr) {
+          case '(':
+            started = true;
+            dimensions = 0;
+            break;
+          case ')':
+            started = false;
+            dimensions = 0;
+            i = signature.length();
+            break;
+          case 'L':
+            clazzName = true;
+            break;
+          case 'I':
+            resultList.add(dimensions == 0 ? int.class : makeMultidimensionArrayClass(int.class, dimensions));
+            dimensions = 0;
+            break;
+          case 'B':
+            resultList.add(dimensions == 0 ? byte.class : makeMultidimensionArrayClass(byte.class, dimensions));
+            dimensions = 0;
+            break;
+          case 'C':
+            resultList.add(dimensions == 0 ? char.class : makeMultidimensionArrayClass(char.class, dimensions));
+            dimensions = 0;
+            break;
+          case 'D':
+            resultList.add(dimensions == 0 ? double.class : makeMultidimensionArrayClass(double.class, dimensions));
+            dimensions = 0;
+            break;
+          case 'F':
+            resultList.add(dimensions == 0 ? float.class : makeMultidimensionArrayClass(float.class, dimensions));
+            dimensions = 0;
+            break;
+          case 'J':
+            resultList.add(dimensions == 0 ? long.class : makeMultidimensionArrayClass(long.class, dimensions));
+            dimensions = 0;
+            break;
+          case 'S':
+            resultList.add(dimensions == 0 ? short.class : makeMultidimensionArrayClass(short.class, dimensions));
+            dimensions = 0;
+            break;
+          case 'Z':
+            resultList.add(dimensions == 0 ? boolean.class : makeMultidimensionArrayClass(boolean.class, dimensions));
+            dimensions = 0;
+            break;
+          case '[':
+            dimensions++;
+            break;
+          default:
+            throw new Error("Unexpected signature [" + signature + ']');
+        }
       }
     }
 
