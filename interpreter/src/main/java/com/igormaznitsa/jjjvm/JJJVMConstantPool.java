@@ -119,7 +119,7 @@ public final class JJJVMConstantPool {
           return (String) this.value;
         case CONSTANT_CLASSREF:
         case CONSTANT_STRING:
-          return this.cpool.records[this.asInt()].asString();
+          return (String)this.cpool.records[this.asInt()].asObject();
         default:
             throw new IllegalArgumentException("Can't be presented as String [" + this.type + ']');
       }

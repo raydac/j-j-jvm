@@ -2,7 +2,7 @@ package com.igormaznitsa.jjjvm;
 
 import static org.junit.Assert.fail;
 
-public class DefaultProvider implements JJJVMProvider {
+public class DefaulttestproviderImpl implements JJJVMProvider {
 
   public Object invoke(final JJJVMClass source, final Object obj, final String clazzName, final String methodName, final String methodSignature, final Object[] _arguments) throws Throwable{
     if (!(methodName.equals("<init>") && methodSignature.equals("()V"))) fail("invoke");
@@ -58,11 +58,6 @@ public class DefaultProvider implements JJJVMProvider {
   public void doThrow(final JJJVMClass caller, final Object exception) throws Throwable {
     fail("doThrow");
     throw new Error("Error");
-  }
-
-  public boolean isExceptionCompatible(final JJJVMClass caller, final Object exception, final String rawExceptionClassName) throws Throwable{
-    fail("isExceptionCompatible");
-    return false;
   }
 
   public void doMonitor(final JJJVMClass caller, final Object object, final boolean lock) throws Throwable{

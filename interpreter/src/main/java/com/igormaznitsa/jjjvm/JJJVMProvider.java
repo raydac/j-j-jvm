@@ -28,6 +28,5 @@ public interface JJJVMProvider {
   public boolean checkCast(JJJVMClass caller, String jvmFormattedClassName, Object objectToCheck) throws Throwable;
   public void doThrow(JJJVMClass caller, Object objectProvidedAsThrowable) throws Throwable;
   public Object resolveClass(String jvmFormattedClassName) throws Throwable;
-  public boolean isExceptionCompatible(JJJVMClass caller, Object exceptionObject, String rawExceptionClassName) throws Throwable;
   public void doMonitor(JJJVMClass caller, Object object, boolean lock) throws Throwable;
 }

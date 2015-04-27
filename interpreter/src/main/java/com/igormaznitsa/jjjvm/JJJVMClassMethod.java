@@ -73,7 +73,7 @@ public final class JJJVMClassMethod {
     
     int numberOfAttrs = inStream.readUnsignedShort();
     
-    String [] declaringExceptions = null;
+    String [] declExceptions = null;
     int lmaxStackDepth = -1;
     int lmaxLocalVars = -1;
     byte [] lbytecode = null;
@@ -86,9 +86,9 @@ public final class JJJVMClassMethod {
       if (ATTRIBUTE_EXCEPTIONS.equals(attrName)) {
         // read exceptions table for the method i.e. the tail contains exceptions which can be thrown by the method
         final int numberOfExceptions = inStream.readUnsignedShort();
-        declaringExceptions = new String[numberOfExceptions];
+        declExceptions = new String[numberOfExceptions];
         for (int li = 0; li < numberOfExceptions; li++) {
-          this.declaredExceptions[li] = cpool.get(inStream.readUnsignedShort()).asString();
+          declExceptions[li] = cpool.get(inStream.readUnsignedShort()).asString();
         }
       }
       else {
@@ -113,14 +113,14 @@ public final class JJJVMClassMethod {
       }
     }
     // it would be good for us to keep arrays as objects but null
-    if (declaringExceptions == null) {
-      declaringExceptions = new String[0];
+    if (declExceptions == null) {
+      declExceptions = new String[0];
     }
     if (lcatchBlocks == null) {
       lcatchBlocks = new JJJVMCatchBlockDescriptor[0];
     }
     
-    this.declaredExceptions = declaringExceptions;
+    this.declaredExceptions = declExceptions;
     this.catchBlocks = lcatchBlocks;
     this.maxStackDepth = lmaxStackDepth;
     this.maxLocals = lmaxLocalVars;

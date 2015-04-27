@@ -308,10 +308,6 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  public boolean isExceptionCompatible(final JJJVMClass caller, final Object exception, final String rawExceptionClassName) throws Throwable {
-    return false;
-  }
-
   public void doMonitor(final JJJVMClass caller, final Object object, boolean lock) throws Throwable {
     if (object instanceof JJJVMObject) {
       final JJJVMObject jjjvmobj = (JJJVMObject) object;

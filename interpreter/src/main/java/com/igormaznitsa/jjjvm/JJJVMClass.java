@@ -1858,7 +1858,7 @@ public final class JJJVMClass {
               break;
             }
 
-            if (this.provider.isExceptionCompatible(this, thr, exceptionClassName)) {
+            if (this.provider.checkCast(this, exceptionClassName, thr)) {
               record = r;
               break;
             }
