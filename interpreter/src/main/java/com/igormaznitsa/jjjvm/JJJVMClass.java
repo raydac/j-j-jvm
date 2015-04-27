@@ -116,10 +116,6 @@ public final class JJJVMClass {
     return this.constantPool.get(this.classNameIndex).asString();
   }
 
-  public String getBaseClassName() {
-    return this.constantPool.get(this.superClassNameIndex).asString();
-  }
-
   public int getCompilerVersion() {
     return this.classFileFormatVersion;
   }
@@ -131,9 +127,9 @@ public final class JJJVMClass {
   private static boolean isCategory2(final Object obj) {
     return obj instanceof Double || obj instanceof Long;
   }
-  
-  private static String makeMethodUID(final String methodName, final String methodSignature){
-    return methodName + '.'+methodSignature;
+
+  private static String makeMethodUID(final String methodName, final String methodSignature) {
+    return methodName + '.' + methodSignature;
   }
 
   private Map<String, JJJVMClassMethod> loadMethods(final DataInputStream inStream) throws IOException {
@@ -141,7 +137,7 @@ public final class JJJVMClass {
     final Map<String, JJJVMClassMethod> result = new HashMap<String, JJJVMClassMethod>(numberOfMethods);
     for (int i = 0; i < numberOfMethods; i++) {
       final JJJVMClassMethod newMethod = new JJJVMClassMethod(this, inStream);
-      result.put(makeMethodUID(newMethod.getName(),newMethod.getSignature()), newMethod);
+      result.put(makeMethodUID(newMethod.getName(), newMethod.getSignature()), newMethod);
     }
     return result;
   }
@@ -163,6 +159,77 @@ public final class JJJVMClass {
       inStream.skipBytes(2);
       //skip data
       inStream.skipBytes(inStream.readInt());
+    }
+  }
+
+  public static String normalizeClassName(final String jvmFormattedClassName) {
+    return jvmFormattedClassName.replace('/', '.');
+  }
+
+  public boolean canBeCastTo(final String jvmFormattedClassName) throws Throwable {
+    if ("java/lang/Object".equals(jvmFormattedClassName)) {
+      return true;
+    }
+
+    return findClassForNameInHierarchy(this, jvmFormattedClassName) != null;
+  }
+
+  public static Object findClassForNameInHierarchy(final Class klazz, final String normalClassName) throws Throwable {
+    if (klazz == null) {
+      return null;
+    }
+    if ("java.lang.Object".equals(normalClassName)) {
+      return java.lang.Object.class;
+    }
+
+    if (klazz.getName().equals(normalClassName)) {
+      return klazz;
+    }
+    for (final Class interfaceClass : klazz.getInterfaces()) {
+      final Object obj = findClassForNameInHierarchy(interfaceClass, normalClassName);
+      if (obj != null) {
+        return obj;
+      }
+    }
+    return findClassForNameInHierarchy(klazz.getSuperclass(), normalClassName);
+  }
+
+  public static Object findClassForNameInHierarchy(final JJJVMClass klazz, final String jvmClassName) throws Throwable {
+    if (klazz == null) {
+      return false;
+    }
+    if ("java/lang/Object".equals(jvmClassName)) {
+      return java.lang.Object.class;
+    }
+    if (jvmClassName.equals(klazz.getJvmClassName())) {
+      return klazz;
+    }
+
+    final String normalizedName = normalizeClassName(jvmClassName);
+
+    for (final String inter : klazz.getInterfaces()) {
+      if (inter.equals(jvmClassName)) {
+        return true;
+      }
+      final Object resolvedClass = klazz.provider.resolveClass(jvmClassName);
+      final Object detected;
+      if (resolvedClass instanceof JJJVMClass) {
+        detected = findClassForNameInHierarchy((JJJVMClass) resolvedClass, jvmClassName);
+      }
+      else {
+        detected = findClassForNameInHierarchy((Class) resolvedClass, jvmClassName);
+      }
+      if (detected != null) {
+        return detected;
+      }
+    }
+
+    final Object superKlazz = klazz.resolveSuperclass();
+    if (superKlazz instanceof JJJVMClass) {
+      return findClassForNameInHierarchy((JJJVMClass) superKlazz, jvmClassName);
+    }
+    else {
+      return findClassForNameInHierarchy((Class) superKlazz, normalizedName);
     }
   }
 
@@ -1421,7 +1488,7 @@ public final class JJJVMClass {
             final String fieldName = fieldRef.getName();
             final String fieldSignature = fieldRef.getSignature();
             final Object resolvedClass = className.equals(this.getJvmClassName()) ? this : this.provider.resolveClass(className);
-            final Object value; 
+            final Object value;
 
             if (resolvedClass instanceof JJJVMClass) {
               final JJJVMClass theclass = (JJJVMClass) resolvedClass;
@@ -1510,7 +1577,6 @@ public final class JJJVMClass {
             final JJJVMConstantPool.Record record = cpool.get(methodRef);
 
             int argsNumber = extractArgNumber(record.getSignature());
-            Object result = null;
 
             final Object[] argsArray = new Object[argsNumber];
             while (argsNumber > 0) {
@@ -1529,29 +1595,29 @@ public final class JJJVMClass {
               }
             }
 
-            final int classRefId = record.asInt() >>> 16;
-
-            final String name = record.getName();
+            final String methodName = record.getName();
             final String signature = record.getSignature();
+            final String klazzName = record.getClassName();
 
-            final String klazzName = cpool.get(classRefId).asString();
-            final Object resolvedKlazz = this.provider.resolveClass(cpool.get(classRefId).asString());
-
-            if (resolvedKlazz instanceof JJJVMClass) {
-              final JJJVMClass jjjvmclazz = (JJJVMClass) resolvedKlazz;
-              if (jjjvmclazz == this) {
-                result = this._invoke((JJJVMObject) objInstance, jjjvmclazz.findMethod(name, signature), argsArray, regSP, localMethodStack, null);
+            if (!(klazzName.equals("java/lang/Object") && methodName.equals("<init>") && signature.equals("()V"))) {
+              final Object resolvedKlazz = this.provider.resolveClass(klazzName);
+              Object result = null;
+              if (resolvedKlazz instanceof JJJVMClass) {
+                final JJJVMClass jjjvmclazz = (JJJVMClass) resolvedKlazz;
+                if (jjjvmclazz == this) {
+                  result = this._invoke((JJJVMObject) objInstance, jjjvmclazz.findMethod(methodName, signature), argsArray, regSP, localMethodStack, null);
+                }
+                else {
+                  result = jjjvmclazz.invoke((JJJVMObject) objInstance, jjjvmclazz.findMethod(methodName, signature), args, null, null);
+                }
               }
               else {
-                result = jjjvmclazz.invoke((JJJVMObject) objInstance, jjjvmclazz.findMethod(name, signature), args, null, null);
+                result = this.provider.invoke(this, objInstance, klazzName, methodName, signature, args);
               }
-            }
-            else {
-              result = this.provider.invoke(this, objInstance, klazzName, name, signature, args);
-            }
 
-            if (signature.charAt(signature.length() - 1) != JJJVMClassMethod.TYPE_VOID) {
-              localMethodStack[regSP++] = result;
+              if (signature.charAt(signature.length() - 1) != JJJVMClassMethod.TYPE_VOID) {
+                localMethodStack[regSP++] = result;
+              }
             }
           }
           break;
@@ -1675,7 +1741,7 @@ public final class JJJVMClass {
                 localMethodStack[index] = 0;
               }
               else {
-                localMethodStack[index] = this.provider.instanceOf(this, rawClassName, object) ? 1 : 0;
+                localMethodStack[index] = this.provider.checkCast(this, rawClassName, object) ? 1 : 0;
               }
             }
           }
@@ -1860,10 +1926,10 @@ public final class JJJVMClass {
 
   private void initFields(final JJJVMObject classInstance) throws Throwable {
     final Object parent = this.provider.resolveClass(getJvmClassName());
-    if (parent!=null && parent instanceof JJJVMClass){
-      ((JJJVMClass)parent).initFields(classInstance);
+    if (parent != null && parent instanceof JJJVMClass) {
+      ((JJJVMClass) parent).initFields(classInstance);
     }
-    
+
     for (final Entry<String, JJJVMClassField> current : this.fieldMap.entrySet()) {
       final JJJVMClassField theField = current.getValue();
 

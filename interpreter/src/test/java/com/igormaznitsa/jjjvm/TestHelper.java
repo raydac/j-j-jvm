@@ -51,9 +51,13 @@ public abstract class TestHelper {
   }
 
   protected static JJJVMClass loadClassFromClassPath(final JJJVMProvider provider, final String className) throws Throwable {
+    return new JJJVMClass(new ByteArrayInputStream(loadClassBodyFromClassPath(className)), provider);
+  }
+  
+  protected static byte[] loadClassBodyFromClassPath(final String className) throws Throwable {
     final ClassPool classPool = ClassPool.getDefault();
     final CtClass klazz = classPool.get(className);
-    return new JJJVMClass(new ByteArrayInputStream(klazz.toBytecode()), provider);
+    return klazz.toBytecode();
   }
   
   protected static JJJVMClass prepareTestClass(final JJJVMProvider processor, final Type type, final Object... instructions) throws Throwable {

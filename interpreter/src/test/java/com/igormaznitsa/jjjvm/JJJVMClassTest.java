@@ -1,11 +1,13 @@
 package com.igormaznitsa.jjjvm;
 
 import static com.igormaznitsa.jjjvm.TestHelper.CONST_CLASS;
+import com.igormaznitsa.jjjvm.impl.JSEProviderImpl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.imageio.IIOException;
 import org.apache.bcel.generic.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -1257,16 +1259,10 @@ public class JJJVMClassTest extends TestHelper {
     final JJJVMProvider proc = new DefaultProvider(){
 
       @Override
-      public boolean instanceOf(JJJVMClass caller, String jvmFormattedClassName, Object value) {
+      public boolean checkCast(final JJJVMClass caller, final String jvmFormattedClassName, final Object value) {
         assertEquals(CONST_CLASS, jvmFormattedClassName);
         assertEquals(fake, value);
         return true;
-      }
-      
-      @Override
-      public boolean checkCast(final JJJVMClass caller, final String jvmFormattedClassName, final Object value) {
-        fail("Must not be called");
-        return false;
       }
     };
     
@@ -1322,8 +1318,22 @@ public class JJJVMClassTest extends TestHelper {
   
   @Test
   public void testIntegration_TestKlazz1() throws Throwable {
-    final JJJVMProvider provider = new DefaultProvider();
-    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com.igormaznitsa.jjjvm.testclasses.TestKlazz1");
+    final JJJVMProvider provider = new JSEProviderImpl(new JSEProviderImpl.ClassLoader() {
+      public byte[] loadClass(final String className) throws IOException, ClassNotFoundException {
+        try{
+          return TestHelper.loadClassBodyFromClassPath(className);
+        }catch(ClassNotFoundException ex){
+          throw ex;
+        }catch(Throwable thr){
+          throw new IIOException("Error",thr);
+        }
+      }
+    });
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestKlazz1");
+    
+    assertTrue(testKlazz.canBeCastTo("java/lang/Object"));
+    assertFalse(testKlazz.canBeCastTo("java/util/Map"));
+    assertTrue(testKlazz.canBeCastTo("java/io/Serializable"));
     
     assertEquals(Integer.valueOf(1234), testKlazz.findDeclaredField("sfield1").getStaticValue());
     assertEquals(Long.valueOf(56787L), testKlazz.findDeclaredField("sfield2").getStaticValue());

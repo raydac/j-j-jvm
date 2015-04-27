@@ -18,13 +18,23 @@ package com.igormaznitsa.jjjvm.impl;
 import com.igormaznitsa.jjjvm.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.*;
 
-public final class JSEProviderImpl implements JJJVMProvider {
+public class JSEProviderImpl implements JJJVMProvider {
 
-  private static final sun.misc.Unsafe UNSAFE = sun.misc.Unsafe.getUnsafe();
+  private static final sun.misc.Unsafe UNSAFE = getUnsafe();
+
+  private static sun.misc.Unsafe getUnsafe() {
+    try {
+      final Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+      field.setAccessible(true);
+      return (sun.misc.Unsafe) field.get(null);
+    }
+    catch (Exception ex) {
+      throw new Error("Can't get access to sun.misc.Unsafe");
+    }
+  }
 
   private final Map<String, Object> classCache = new HashMap<String, Object>();
   private final Map<String, Class[]> parsedArgsCache = new HashMap<String, Class[]>();
@@ -71,13 +81,12 @@ public final class JSEProviderImpl implements JJJVMProvider {
   }
 
   public Object invoke(final JJJVMClass caller, final Object instance, final String jvmFormattedClassName, final String methodName, final String methodSignature, final Object[] arguments) throws Throwable {
-    final Object resolvedClass = resolveClass(jvmFormattedClassName);
-
     if (instance instanceof JJJVMObject) {
-      final JJJVMClass klazz = (JJJVMClass) resolvedClass;
-      return klazz.invoke((JJJVMObject) instance, klazz.findDeclaredMethod(methodName, methodSignature), arguments, null, null);
+      final JJJVMClass klazz = ((JJJVMObject) instance).getKlazz();
+      return klazz.invoke((JJJVMObject) instance, klazz.findMethod(methodName, methodSignature), arguments, null, null);
     }
     else {
+      final Object resolvedClass = resolveClass(jvmFormattedClassName);
       Class[] paramClasses;
       synchronized (this.parsedArgsCache) {
         paramClasses = this.parsedArgsCache.get(methodSignature);
@@ -156,13 +165,25 @@ public final class JSEProviderImpl implements JJJVMProvider {
   }
 
   public boolean checkCast(final JJJVMClass caller, final String jvmFormattedClassName, final Object value) throws Throwable {
-    //TODO implement checkCast
-    return true;
-  }
-
-  public boolean instanceOf(final JJJVMClass caller, final String jvmFormattedClassName, final Object value) throws Throwable {
-    //TODO implement instanceOf
-    return true;
+    boolean result = true;
+    if (!"java/lang/Object".equals(jvmFormattedClassName)) {
+      if (value instanceof JJJVMObject) {
+        result = JJJVMClass.findClassForNameInHierarchy(((JJJVMObject) value).getKlazz(), jvmFormattedClassName) != null;
+      }
+      else {
+        final Object theclazz = this.resolveClass(jvmFormattedClassName);
+        if (theclazz instanceof JJJVMClass) {
+          return false;
+        }
+        try {
+          ((Class) theclazz).cast(value);
+        }
+        catch (ClassCastException ex) {
+          result = false;
+        }
+      }
+    }
+    return result;
   }
 
   public void doThrow(final JJJVMClass caller, final Object objectProvidedAsThrowable) throws Throwable {
@@ -205,7 +226,7 @@ public final class JSEProviderImpl implements JJJVMProvider {
 
   private Class[] parseArgsFromMethodSignature(final String signature) throws Throwable {
     // TODO implement array support
-    
+
     final List<Class> resultList = new ArrayList<Class>();
 
     final StringBuilder klazzNameBuffer = new StringBuilder(16);
@@ -287,7 +308,8 @@ public final class JSEProviderImpl implements JJJVMProvider {
         case '[':
           dimensions++;
           break;
-        default: throw new Error("unexpected char ["+chr+']');
+        default:
+          throw new Error("unexpected char [" + chr + ']');
       }
     }
 

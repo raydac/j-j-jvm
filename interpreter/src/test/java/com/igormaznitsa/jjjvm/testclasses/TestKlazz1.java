@@ -1,6 +1,10 @@
 package com.igormaznitsa.jjjvm.testclasses;
 
-public final class TestKlazz1 {
+import java.io.Serializable;
+
+public final class TestKlazz1 implements Serializable{
+  private static final long serialVersionUID = -772791003019300556L;
+  
   public static int sfield1 = 1234;
   public static long sfield2 = 56787L;
   public static String sfield3 = "Hello world";

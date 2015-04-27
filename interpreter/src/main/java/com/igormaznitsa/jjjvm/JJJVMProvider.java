@@ -25,8 +25,7 @@ public interface JJJVMProvider {
   public void set(JJJVMClass caller, Object obj, String fieldName, String fieldSignature, Object fieldValue) throws Throwable;
   public Object getStatic(JJJVMClass caller, String jvmFormattedClassName, String fieldName, String fieldSignature) throws Throwable;
   public void setStatic(JJJVMClass caller, String jvmFormattedClassName, String fieldName, String fieldSignature, Object value) throws Throwable;
-  public boolean checkCast(JJJVMClass caller, String jvmFormattedClassName, Object value) throws Throwable;
-  public boolean instanceOf(JJJVMClass caller, String jvmFormattedClassName, Object value) throws Throwable;
+  public boolean checkCast(JJJVMClass caller, String jvmFormattedClassName, Object objectToCheck) throws Throwable;
   public void doThrow(JJJVMClass caller, Object objectProvidedAsThrowable) throws Throwable;
   public Object resolveClass(String jvmFormattedClassName) throws Throwable;
   public boolean isExceptionCompatible(JJJVMClass caller, Object exceptionObject, String rawExceptionClassName) throws Throwable;
