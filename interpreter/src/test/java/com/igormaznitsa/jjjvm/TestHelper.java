@@ -45,7 +45,12 @@ public abstract class TestHelper {
     clazz.addField(CtField.make("public static int sfield;", clazz));
     clazz.addField(CtField.make("public int field = 123;", clazz));
     clazz.addMethod(CtNewMethod.make(method, clazz));
-    final JJJVMClass result = new JJJVMClass(new ByteArrayInputStream(clazz.toBytecode()), processor);
+    
+    final byte [] classBody = clazz.toBytecode();
+    
+//    FileUtils.writeByteArrayToFile(new File("/home/igorm/1/SyntheticMJVMTest.class"), classBody);
+    
+    final JJJVMClass result = new JJJVMClass(new ByteArrayInputStream(classBody), processor);
     clazz.detach();
     return result;
   }

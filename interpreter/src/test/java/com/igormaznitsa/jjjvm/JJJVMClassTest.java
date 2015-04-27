@@ -12,7 +12,18 @@ import org.apache.bcel.generic.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class JJJVMClassTest extends TestHelper {
+public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassLoader {
+  public byte[] loadClass(String className) throws IOException, ClassNotFoundException {
+    try {
+      return TestHelper.loadClassBodyFromClassPath(className);
+    }
+    catch (ClassNotFoundException ex) {
+      throw ex;
+    }
+    catch (Throwable thr) {
+      throw new IIOException("Error", thr);
+    }
+  }
 
   @Test
   public void test_NOP_NULL_ARETURN_null() throws Throwable {
@@ -1318,17 +1329,7 @@ public class JJJVMClassTest extends TestHelper {
   
   @Test
   public void testIntegration_TestKlazz1() throws Throwable {
-    final JJJVMProvider provider = new JSEProviderImpl(new JSEProviderImpl.ClassLoader() {
-      public byte[] loadClass(final String className) throws IOException, ClassNotFoundException {
-        try{
-          return TestHelper.loadClassBodyFromClassPath(className);
-        }catch(ClassNotFoundException ex){
-          throw ex;
-        }catch(Throwable thr){
-          throw new IIOException("Error",thr);
-        }
-      }
-    });
+    final JJJVMProvider provider = new JSEProviderImpl(this);
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestKlazz1");
     
     assertTrue(testKlazz.canBeCastTo("java/lang/Object"));
@@ -1360,7 +1361,27 @@ public class JJJVMClassTest extends TestHelper {
     assertEquals(new Double(8.0d),testKlazz.invoke(obj, doTableSwitchMethod, new Object[]{2L}, null, null));
     assertEquals(new Double(81.0d),testKlazz.invoke(obj, doTableSwitchMethod, new Object[]{9L}, null, null));
     assertEquals(new Double(93*93),testKlazz.invoke(obj, doTableSwitchMethod, new Object[]{93L}, null, null));
-    
   }
+
+  @Test
+  public void testIntegration_FillMultidimensionalArray_Int() throws Throwable {
+    final JJJVMClass test = prepareTestClass(new JSEProviderImpl(this), 
+            "public java.lang.Object test(java.lang.Object a){"
+            + " int [][] array = new int[2][10];"
+            + " for(int x=0; x<array.length; x++){"
+            + "  int [] fill = array[x];"
+            + "  for(int y=0; y< fill.length; y++){"
+            + "    fill[y] = y;"
+            + "  }"
+            + " }"
+            + " return array;"
+            + "}"
+    );
   
+    final int[][] result = (int[][]) executeTestMethod(test, Object.class, null, null);
+    assertEquals(2, result.length);
+    assertArrayEquals(new int[]{0,1,2,3,4,5,6,7,8,9}, result[0]);
+    assertArrayEquals(new int[]{0,1,2,3,4,5,6,7,8,9}, result[1]);
+  }
+
 }

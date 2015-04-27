@@ -1925,7 +1925,7 @@ public final class JJJVMClass {
   }
 
   private void initFields(final JJJVMObject classInstance) throws Throwable {
-    final Object parent = this.provider.resolveClass(getJvmClassName());
+    final Object parent = this.provider.resolveClass(getSuperclassName());
     if (parent != null && parent instanceof JJJVMClass) {
       ((JJJVMClass) parent).initFields(classInstance);
     }

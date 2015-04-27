@@ -113,7 +113,49 @@ public class JSEProviderImpl implements JJJVMProvider {
   }
 
   public Object newMultidimensional(final JJJVMClass caller, final String jvmFormattedClassName, final int[] arrayDimensions) throws Throwable {
-    final Object resolvedClass = resolveClass(jvmFormattedClassName);
+    final int lastDim = jvmFormattedClassName.lastIndexOf('[');
+    final String pureName;
+    if (lastDim >= 0) {
+      pureName = jvmFormattedClassName.substring(lastDim + 1);
+    }
+    else {
+      pureName = jvmFormattedClassName;
+    }
+
+    final Object resolvedClass;
+    if (pureName.length() == 1) {
+      switch (pureName.charAt(0)) {
+        case 'B':
+          resolvedClass = byte.class;
+          break;
+        case 'C':
+          resolvedClass = char.class;
+          break;
+        case 'F':
+          resolvedClass = float.class;
+          break;
+        case 'J':
+          resolvedClass = long.class;
+          break;
+        case 'S':
+          resolvedClass = short.class;
+          break;
+        case 'Z':
+          resolvedClass = boolean.class;
+          break;
+        case 'I':
+          resolvedClass = int.class;
+          break;
+        case 'D':
+          resolvedClass = double.class;
+          break;
+        default:
+          throw new Error("Unexpected type [" + pureName + ']');
+      }
+    }
+    else {
+      resolvedClass = resolveClass(pureName);
+    }
 
     if (resolvedClass instanceof JJJVMClass) {
       return Array.newInstance(JJJVMClass.class, arrayDimensions);
@@ -224,9 +266,11 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  private Class[] parseArgsFromMethodSignature(final String signature) throws Throwable {
-    // TODO implement array support
+  private static Class makeMultidimensionArrayClass(final Class klazz, final int dimensionNumber) {
+    return Array.newInstance(klazz, new int[dimensionNumber]).getClass();
+  }
 
+  private Class[] parseArgsFromMethodSignature(final String signature) throws Throwable {
     final List<Class> resultList = new ArrayList<Class>();
 
     final StringBuilder klazzNameBuffer = new StringBuilder(16);
@@ -247,7 +291,7 @@ public class JSEProviderImpl implements JJJVMProvider {
 
           final Object resolvedClass = resolveClass(className);
           if (resolvedClass instanceof Class) {
-            resultList.add((Class) resolvedClass);
+            resultList.add(dimensions == 0 ? (Class) resolvedClass : makeMultidimensionArrayClass((Class) resolvedClass, dimensions));
           }
           else {
             throw new IllegalArgumentException("Unsupported object type as argument [" + resolvedClass + ']');
@@ -274,35 +318,35 @@ public class JSEProviderImpl implements JJJVMProvider {
           clazzName = true;
           break;
         case 'I':
-          resultList.add(int.class);
+          resultList.add(dimensions == 0 ? int.class : makeMultidimensionArrayClass(int.class, dimensions));
           dimensions = 0;
           break;
         case 'B':
-          resultList.add(byte.class);
+          resultList.add(dimensions == 0 ? byte.class : makeMultidimensionArrayClass(byte.class, dimensions));
           dimensions = 0;
           break;
         case 'C':
-          resultList.add(char.class);
+          resultList.add(dimensions == 0 ? char.class : makeMultidimensionArrayClass(char.class, dimensions));
           dimensions = 0;
           break;
         case 'D':
-          resultList.add(double.class);
+          resultList.add(dimensions == 0 ? double.class : makeMultidimensionArrayClass(double.class, dimensions));
           dimensions = 0;
           break;
         case 'F':
-          resultList.add(float.class);
+          resultList.add(dimensions == 0 ? float.class : makeMultidimensionArrayClass(float.class, dimensions));
           dimensions = 0;
           break;
         case 'J':
-          resultList.add(long.class);
+          resultList.add(dimensions == 0 ? long.class : makeMultidimensionArrayClass(long.class, dimensions));
           dimensions = 0;
           break;
         case 'S':
-          resultList.add(short.class);
+          resultList.add(dimensions == 0 ? short.class : makeMultidimensionArrayClass(short.class, dimensions));
           dimensions = 0;
           break;
         case 'Z':
-          resultList.add(boolean.class);
+          resultList.add(dimensions == 0 ? boolean.class : makeMultidimensionArrayClass(boolean.class, dimensions));
           dimensions = 0;
           break;
         case '[':
