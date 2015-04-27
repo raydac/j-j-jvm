@@ -34,11 +34,6 @@ public final class JJJVMClass {
   public static final int ACC_ANNOTATION = 0x2000;
   public static final int ACC_ENUM = 0x4000;
   //-----------------------------
-  // inside string attribute identifiers
-  public static final String ATTRIBUTE_EXCEPTIONS = "Exceptions";
-  public static final String ATTRIBUTE_CODE = "Code";
-  public static final String ATTRIBUTE_CONSTANTVALUE = "ConstantValue";
-  //-----------------------------
   private final int classFileFormatVersion;
   private final int classAccessFlags;
   private final int classNameIndex;

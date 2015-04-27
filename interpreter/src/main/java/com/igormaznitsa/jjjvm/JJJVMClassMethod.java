@@ -46,7 +46,9 @@ public final class JJJVMClassMethod {
   public static final char TYPE_CLASS = 'L';
   public static final char TYPE_ARRAY = '[';
   //-----------------------------------------
-
+  private static final String ATTRIBUTE_EXCEPTIONS = "Exceptions";
+  private static final String ATTRIBUTE_CODE = "Code";
+  //-----------------------------------------
   private  final JJJVMClass declaringClass;
   private final int flags;
   private final String name;
@@ -81,7 +83,7 @@ public final class JJJVMClassMethod {
       final String attrName = cpool.get(inStream.readUnsignedShort()).asString();
       // read the size of the attribute data
       final int attributeDataLen = inStream.readInt();
-      if (JJJVMClass.ATTRIBUTE_EXCEPTIONS.equals(attrName)) {
+      if (ATTRIBUTE_EXCEPTIONS.equals(attrName)) {
         // read exceptions table for the method i.e. the tail contains exceptions which can be thrown by the method
         final int numberOfExceptions = inStream.readUnsignedShort();
         declaringExceptions = new String[numberOfExceptions];
@@ -90,7 +92,7 @@ public final class JJJVMClassMethod {
         }
       }
       else {
-        if (JJJVMClass.ATTRIBUTE_CODE.equals(attrName)) {
+        if (ATTRIBUTE_CODE.equals(attrName)) {
           // read the method bytecode and its attributes
           lmaxStackDepth= inStream.readUnsignedShort();
           lmaxLocalVars = inStream.readUnsignedShort();

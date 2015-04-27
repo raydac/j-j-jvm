@@ -30,7 +30,8 @@ public final class JJJVMClassField {
   public static final int ACC_ENUM = 0x4000;
 
   //---------------------------
-  
+  private static final String ATTRIBUTE_CONSTANTVALUE = "ConstantValue";
+  //---------------------------
   private final JJJVMClass declaringClass;
   private final int flags;
   private final String name;
@@ -64,7 +65,7 @@ public final class JJJVMClassField {
     int attributesCounter = inStream.readUnsignedShort();
     while (--attributesCounter >= 0) {
       final String attrName = (String) declaringClass.getConstantPool().get(inStream.readUnsignedShort()).asString();
-      if (JJJVMClass.ATTRIBUTE_CONSTANTVALUE.equals(attrName)) {
+      if (ATTRIBUTE_CONSTANTVALUE.equals(attrName)) {
         final int attributeSize = inStream.readInt();
         if (attributeSize != 2) {
           throw new IOException("Wrong size for constant value attribute [" + attributeSize + ']');
