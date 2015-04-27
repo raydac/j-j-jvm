@@ -49,6 +49,8 @@ public final class JJJVMClass {
   private final JJJVMProvider provider;
   private final JJJVMConstantPool constantPool;
 
+  private static final Map<String, Integer> argNumberMap = new HashMap<String, Integer>();
+
   JJJVMClass() {
     this.classFileFormatVersion = 0;
     this.classAccessFlags = 0;
@@ -1588,7 +1590,7 @@ public final class JJJVMClass {
 
             final JJJVMConstantPool.Record record = cpool.get(methodRef);
 
-            int argsNumber = extractArgNumber(record.getSignature());
+            int argsNumber = extractArgsNumber(record.getSignature());
 
             final Object[] argsArray = new Object[argsNumber];
             while (argsNumber > 0) {
@@ -1880,35 +1882,48 @@ public final class JJJVMClass {
     }
   }
 
-  private int extractArgNumber(final String signature) {
-    final int len = signature.length();
-    boolean objFlag = false;
-    int counter = 0;
-    for (int li = 0; li < len; li++) {
-      switch (signature.charAt(li)) {
-        case '(':
-          continue;
-        case ')':
-          return counter;
-        case '[':
-          continue;
-        case 'L':
-          counter++;
-          objFlag = true;
-          break;
-        case ';':
-          objFlag = false;
-          break;
-        default: {
-          if (!objFlag) {
-            counter++;
+  private static int extractArgsNumber(final String methodSignature) {
+    synchronized (argNumberMap) {
+      if (argNumberMap.containsKey(methodSignature)) {
+        return argNumberMap.get(methodSignature);
+      }
+      else {
+        final int len = methodSignature.length();
+        boolean objFlag = false;
+        int counter = 0;
+        boolean work = true;
+        for (int li = 0; li < len && work; li++) {
+          switch (methodSignature.charAt(li)) {
+            case '(':
+              continue;
+            case ')':
+              work = false;
+              break;
+            case '[':
+              continue;
+            case 'L':
+              counter++;
+              objFlag = true;
+              break;
+            case ';':
+              objFlag = false;
+              break;
+            default: {
+              if (!objFlag) {
+                counter++;
+              }
+            }
+            break;
           }
         }
-        break;
+
+        if (work) {
+          throw new IllegalArgumentException("Wrong signature [" + methodSignature + ']');
+        }
+        argNumberMap.put(methodSignature, counter);
+        return counter;
       }
     }
-
-    throw new IllegalArgumentException("Wrong signature [" + signature + ']');
   }
 
   private static int readIntFromArray(final byte[] array, int offset) {

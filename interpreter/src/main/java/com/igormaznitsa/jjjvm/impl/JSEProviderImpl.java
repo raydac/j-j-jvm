@@ -21,6 +21,11 @@ import java.io.IOException;
 import java.lang.reflect.*;
 import java.util.*;
 
+/**
+ * Implementation of provider for Java SE.
+ *
+ * @see sun.misc.Unsafe
+ */
 public class JSEProviderImpl implements JJJVMProvider {
 
   private static final sun.misc.Unsafe UNSAFE = getUnsafe();
@@ -38,10 +43,23 @@ public class JSEProviderImpl implements JJJVMProvider {
 
   private final Map<String, Object> classCache = new HashMap<String, Object>();
   private final Map<String, Class[]> parsedArgsCache = new HashMap<String, Class[]>();
+  private final Map<String, Map<String, Boolean>> cachedCast = new HashMap<String, Map<String, Boolean>>();
 
+  /**
+   * Class loader which loads and provides class byte-code
+   */
   public interface ClassLoader {
 
-    byte[] loadClass(String className) throws IOException, ClassNotFoundException;
+    /**
+     * Load class byte-code.
+     *
+     * @param jvmFormattedClassName the JVM formatted class name, must not be
+     * null.
+     * @return byte-code of the class, must not be null
+     * @throws IOException it must be throws for transport error
+     * @throws ClassNotFoundException it must be thrown if class not found
+     */
+    byte[] loadClass(String jvmFormattedClassName) throws IOException, ClassNotFoundException;
   }
 
   private final ClassLoader classBodyProvider;
@@ -94,11 +112,12 @@ public class JSEProviderImpl implements JJJVMProvider {
       }
 
       final Class klazz = (Class) resolvedClass;
-      if ("<init>".equals(methodName)){
+      if ("<init>".equals(methodName)) {
         // constructor
         final Constructor constructor = klazz.getConstructor(paramClasses);
         return constructor.newInstance(arguments);
-      }else{
+      }
+      else {
         final Method method = klazz.getMethod(methodName, paramClasses);
         return method.invoke(instance, arguments);
       }
@@ -115,19 +134,39 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
+  private static String extractTypeFromFieldSignature(final String fieldSignature) {
+    final StringBuilder buffer = new StringBuilder(fieldSignature.length());
+    boolean className = false;
+    for (int i = 0; i < fieldSignature.length(); i++) {
+      final char chr = fieldSignature.charAt(i);
+
+      if (className) {
+        if (chr == ';') {
+          break;
+        }
+        else {
+          buffer.append(chr);
+        }
+      }
+      else {
+        if (chr == '[') {
+          continue;
+        }
+        if (chr == 'L') {
+          className = true;
+        }
+        buffer.append(chr);
+      }
+    }
+    return buffer.toString();
+  }
+
   public Object newMultidimensional(final JJJVMClass caller, final String jvmFormattedClassName, final int[] arrayDimensions) throws Throwable {
-    final int lastDim = jvmFormattedClassName.lastIndexOf('[');
-    final String pureName;
-    if (lastDim >= 0) {
-      pureName = jvmFormattedClassName.substring(lastDim + 1);
-    }
-    else {
-      pureName = jvmFormattedClassName;
-    }
+    final String extractedType = extractTypeFromFieldSignature(jvmFormattedClassName);
 
     final Object resolvedClass;
-    if (pureName.length() == 1) {
-      switch (pureName.charAt(0)) {
+    if (extractedType.length() == 1) {
+      switch (extractedType.charAt(0)) {
         case 'B':
           resolvedClass = byte.class;
           break;
@@ -153,11 +192,11 @@ public class JSEProviderImpl implements JJJVMProvider {
           resolvedClass = double.class;
           break;
         default:
-          throw new Error("Unexpected type [" + pureName + ']');
+          throw new Error("Unexpected type [" + extractedType + ']');
       }
     }
     else {
-      resolvedClass = resolveClass(pureName);
+      resolvedClass = resolveClass(extractedType);
     }
 
     if (resolvedClass instanceof JJJVMClass) {
@@ -210,25 +249,49 @@ public class JSEProviderImpl implements JJJVMProvider {
   }
 
   public boolean checkCast(final JJJVMClass caller, final String jvmFormattedClassName, final Object value) throws Throwable {
-    boolean result = true;
-    if (!"java/lang/Object".equals(jvmFormattedClassName)) {
+    if ("java/lang/Object".equals(jvmFormattedClassName)) {
+      return true;
+    }
+    synchronized (this.cachedCast) {
+      Map<String, Boolean> record = this.cachedCast.get(jvmFormattedClassName);
+      if (record == null) {
+        record = new HashMap<String, Boolean>();
+        this.cachedCast.put(jvmFormattedClassName, record);
+      }
+
+      boolean result = true;
       if (value instanceof JJJVMObject) {
-        result = JJJVMClass.findClassForNameInHierarchy(((JJJVMObject) value).getKlazz(), jvmFormattedClassName) != null;
+        final JJJVMObject jjjvmObj = (JJJVMObject) value;
+        final String objClassName = jjjvmObj.getKlazz().getJvmClassName();
+
+        Boolean flag = record.get(objClassName);
+        if (flag == null) {
+          result = JJJVMClass.findClassForNameInHierarchy(jjjvmObj.getKlazz(), jvmFormattedClassName) != null;
+          record.put(objClassName, result);
+        }
+        else {
+          result = flag;
+        }
       }
       else {
-        final Object theclazz = this.resolveClass(jvmFormattedClassName);
-        if (theclazz instanceof JJJVMClass) {
-          return false;
+        final String klazzName = value.getClass().getName();
+        Boolean flag = record.get(klazzName);
+        if (flag == null) {
+          final Object theclazz = this.resolveClass(jvmFormattedClassName);
+          try {
+            ((Class) theclazz).cast(value);
+          }
+          catch (ClassCastException ex) {
+            result = false;
+          }
+          record.put(klazzName, result);
         }
-        try {
-          ((Class) theclazz).cast(value);
-        }
-        catch (ClassCastException ex) {
-          result = false;
+        else {
+          result = flag;
         }
       }
+      return result;
     }
-    return result;
   }
 
   public void doThrow(final JJJVMClass caller, final Object objectProvidedAsThrowable) throws Throwable {
