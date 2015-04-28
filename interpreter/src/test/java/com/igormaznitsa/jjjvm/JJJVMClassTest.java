@@ -1399,6 +1399,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   public void testIntegration_TestInnerClasses() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInnerClasses");
+    assertEquals("TestInnerClasses.java",testKlazz.getSourceFile());
     
     final JJJVMObject instance = testKlazz.newInstance(true);
     

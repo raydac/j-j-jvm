@@ -40,6 +40,7 @@ public final class JJJVMClass {
   public static final int ACC_ENUM = 0x4000;
   //-----------------------------
   private static final String ATTR_INNERCLASSES = "InnerClasses";
+  private static final String ATTR_SOURCEFILE = "SourceFile";
   //-----------------------------
   private final int classFileFormatVersion;
   private final int classAccessFlags;
@@ -51,6 +52,7 @@ public final class JJJVMClass {
   private final JJJVMProvider provider;
   private final JJJVMConstantPool constantPool;
   private final JJJVMInnerClassRecord [] innerClasses;
+  private final String sourceFile;
   
   private static final Map<String, Integer> argNumberMap = new HashMap<String, Integer>();
 
@@ -65,6 +67,7 @@ public final class JJJVMClass {
     this.methodMap = null;
     this.fieldMap = null;
     this.innerClasses = null;
+    this.sourceFile = null;
   }
 
   public JJJVMClass(final InputStream inStream, final JJJVMProvider externalProcessor) throws Throwable {
@@ -98,6 +101,7 @@ public final class JJJVMClass {
     this.methodMap = loadMethods(readStr);
     
     JJJVMInnerClassRecord [] detectedInnerClassess = null;
+    String sourceFileName = null;
     int classAttributeNumber = readStr.readUnsignedShort();
     while(--classAttributeNumber>=0){
       final int nameIndex = readStr.readUnsignedShort();
@@ -105,10 +109,14 @@ public final class JJJVMClass {
       final String attrName = this.constantPool.get(nameIndex).asString();
       if (ATTR_INNERCLASSES.equals(attrName)){
         detectedInnerClassess = readInnerClasses(readStr);
-      }else{
+      } else if (ATTR_SOURCEFILE.equals(attrName)){
+        sourceFileName = this.constantPool.get(readStr.readUnsignedShort()).asString();
+      }
+      else{
         readStr.skipBytes(dataSize);
       }
     }
+    this.sourceFile = sourceFileName;
     this.innerClasses = detectedInnerClassess == null ? new JJJVMInnerClassRecord[0] : detectedInnerClassess;
     
     final JJJVMClassMethod clinitMethod = findMethod("<clinit>", "()V");
@@ -122,6 +130,10 @@ public final class JJJVMClass {
     }
   }
 
+  public String getSourceFile(){
+    return this.sourceFile;
+  }
+  
   private JJJVMInnerClassRecord [] readInnerClasses(final DataInputStream inStream) throws Throwable {
     int numberOfClassess = inStream.readUnsignedShort();
     final JJJVMInnerClassRecord [] result = new JJJVMInnerClassRecord[numberOfClassess];
