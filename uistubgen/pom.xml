@@ -4,8 +4,7 @@
   <parent>
     <groupId>com.igormaznitsa</groupId>
     <artifactId>j-j-jvm</artifactId>
-    <version>${main.version}</version>
-    <relativePath>../pom.xml</relativePath>
+    <version>1.0.4-SNAPSHOT</version>
   </parent>
   <artifactId>j-j-jvm-stubgen</artifactId>
   <packaging>jar</packaging>

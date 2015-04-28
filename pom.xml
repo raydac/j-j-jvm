@@ -4,9 +4,15 @@
   
   <groupId>com.igormaznitsa</groupId>
   <artifactId>j-j-jvm</artifactId>
-  <version>${main.version}</version>
+  <version>1.0.4-SNAPSHOT</version>
   
   <packaging>pom</packaging>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.5</maven.compiler.source>
+    <maven.compiler.target>1.5</maven.compiler.target>
+  </properties>
 
   <inceptionYear>2009</inceptionYear>
 
@@ -38,13 +44,6 @@
     </developer>
   </developers>
                                     
-  <properties>
-    <main.version>1.0.4-SNAPSHOT</main.version>    
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.5</maven.compiler.source>
-    <maven.compiler.target>1.5</maven.compiler.target>
-  </properties>
-    
   <modules>
     <module>uistubgen</module>
     <module>interpreter</module>
