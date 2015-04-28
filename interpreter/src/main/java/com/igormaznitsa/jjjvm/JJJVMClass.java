@@ -21,9 +21,11 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Implements class container, can execute methods.
+ *
  * @see JJJVMClassMethod
  * @see JJJVMClassField
  */
@@ -51,10 +53,11 @@ public final class JJJVMClass {
   private final Map<String, JJJVMClassMethod> methodMap;
   private final JJJVMProvider provider;
   private final JJJVMConstantPool constantPool;
-  private final JJJVMInnerClassRecord [] innerClasses;
+  private final JJJVMInnerClassRecord[] innerClasses;
   private final String sourceFile;
-  
+
   private static final Map<String, Integer> argNumberMap = new HashMap<String, Integer>();
+  private static final Map<String, String> loadingClasses = new ConcurrentHashMap<String, String>();
 
   JJJVMClass() {
     this.classFileFormatVersion = 0;
@@ -89,67 +92,87 @@ public final class JJJVMClass {
     this.constantPool = new JJJVMConstantPool(this, readStr);
     this.classAccessFlags = readStr.readUnsignedShort();
     this.classNameIndex = readStr.readUnsignedShort();
-    this.superClassNameIndex = readStr.readUnsignedShort();
-    final int numberOfInterfaces = readStr.readUnsignedShort();
-    this.implementedInterfaces = new String[numberOfInterfaces];
-    for (int i = 0; i < numberOfInterfaces; i++) {
-      final String interfaceClassName = this.constantPool.get(readStr.readUnsignedShort()).asString();
-      this.implementedInterfaces[i] = interfaceClassName;
-      this.provider.resolveClass(interfaceClassName);
+
+    loadingClasses.put(this.getClassName(), this.getClassName());
+
+    try {
+      this.superClassNameIndex = readStr.readUnsignedShort();
+      final int numberOfInterfaces = readStr.readUnsignedShort();
+      this.implementedInterfaces = new String[numberOfInterfaces];
+      for (int i = 0; i < numberOfInterfaces; i++) {
+        final String interfaceClassName = this.constantPool.get(readStr.readUnsignedShort()).asString();
+        this.implementedInterfaces[i] = interfaceClassName;
+        this.provider.resolveClass(interfaceClassName);
+      }
+      this.fieldMap = loadFields(readStr);
+      this.methodMap = loadMethods(readStr);
+
+      JJJVMInnerClassRecord[] detectedInnerClassess = null;
+      String sourceFileName = null;
+      int classAttributeNumber = readStr.readUnsignedShort();
+      while (--classAttributeNumber >= 0) {
+        final int nameIndex = readStr.readUnsignedShort();
+        final int dataSize = readStr.readInt();
+        final String attrName = this.constantPool.get(nameIndex).asString();
+        if (ATTR_INNERCLASSES.equals(attrName)) {
+          detectedInnerClassess = readInnerClasses(readStr);
+        }
+        else if (ATTR_SOURCEFILE.equals(attrName)) {
+          sourceFileName = this.constantPool.get(readStr.readUnsignedShort()).asString();
+        }
+        else {
+          readStr.skipBytes(dataSize);
+        }
+      }
+      this.sourceFile = sourceFileName;
+      this.innerClasses = detectedInnerClassess == null ? new JJJVMInnerClassRecord[0] : detectedInnerClassess;
+
+      final JJJVMClassMethod clinitMethod = findMethod("<clinit>", "()V");
+      if (clinitMethod != null) {
+        try {
+          invoke(null, clinitMethod, null, null, null);
+        }
+        catch (Throwable thr) {
+          throw new IOException("Error during <clinit>");
+        }
+      }
     }
-    this.fieldMap = loadFields(readStr);
-    this.methodMap = loadMethods(readStr);
-    
-    JJJVMInnerClassRecord [] detectedInnerClassess = null;
-    String sourceFileName = null;
-    int classAttributeNumber = readStr.readUnsignedShort();
-    while(--classAttributeNumber>=0){
-      final int nameIndex = readStr.readUnsignedShort();
-      final int dataSize = readStr.readInt();
-      final String attrName = this.constantPool.get(nameIndex).asString();
-      if (ATTR_INNERCLASSES.equals(attrName)){
-        detectedInnerClassess = readInnerClasses(readStr);
-      } else if (ATTR_SOURCEFILE.equals(attrName)){
-        sourceFileName = this.constantPool.get(readStr.readUnsignedShort()).asString();
-      }
-      else{
-        readStr.skipBytes(dataSize);
-      }
-    }
-    this.sourceFile = sourceFileName;
-    this.innerClasses = detectedInnerClassess == null ? new JJJVMInnerClassRecord[0] : detectedInnerClassess;
-    
-    final JJJVMClassMethod clinitMethod = findMethod("<clinit>", "()V");
-    if (clinitMethod != null) {
-      try {
-        invoke(null, clinitMethod, null, null, null);
-      }
-      catch (Throwable thr) {
-        throw new IOException("Error during <clinit>");
-      }
+    finally {
+      loadingClasses.remove(getClassName());
     }
   }
 
-  public String getSourceFile(){
+  public String getSourceFile() {
     return this.sourceFile;
   }
-  
-  private JJJVMInnerClassRecord [] readInnerClasses(final DataInputStream inStream) throws Throwable {
+
+  private JJJVMInnerClassRecord[] readInnerClasses(final DataInputStream inStream) throws Throwable {
     int numberOfClassess = inStream.readUnsignedShort();
-    final JJJVMInnerClassRecord [] result = new JJJVMInnerClassRecord[numberOfClassess];
-    for(int i=0;i<numberOfClassess;i++){
-      result[i] = new JJJVMInnerClassRecord(this, inStream);
-      if (!this.getJvmClassName().equals(result[i].getInnerClassInfo().getClassName())){
-        this.provider.resolveInnerClass(this, result[i]);
+    final JJJVMInnerClassRecord[] result = new JJJVMInnerClassRecord[numberOfClassess];
+    for (int i = 0; i < numberOfClassess; i++) {
+      final JJJVMInnerClassRecord record = new JJJVMInnerClassRecord(this, inStream);
+      result[i] = record;
+      if (isClassLoading(record.getInnerClassInfo().asString())) {
+        continue;
       }
+      this.provider.resolveInnerClass(this, record);
     }
+
     return result;
   }
-  
-  public JJJVMInnerClassRecord [] getInnerClassRecords(){
-    return this.innerClasses;
+
+  public static boolean isClassLoading(final String className){
+    return loadingClasses.containsKey(className);
   }
   
+  public static int getNumberOfLoadingClasses(){
+    return loadingClasses.size();
+  }
+  
+  public JJJVMInnerClassRecord[] getInnerClassRecords() {
+    return this.innerClasses;
+  }
+
   public String getSuperclassName() {
     return this.constantPool.get(this.superClassNameIndex).asString();
   }
@@ -162,8 +185,16 @@ public final class JJJVMClass {
     return this.implementedInterfaces;
   }
 
-  public String getJvmClassName() {
+  public String getClassName() {
     return this.constantPool.get(this.classNameIndex).asString();
+  }
+
+  public String getName() {
+    return getClassName().replace('/', '.');
+  }
+
+  public String getCanonicalName() {
+    return getName().replace('$', '.');
   }
 
   public int getCompilerVersion() {
@@ -251,7 +282,7 @@ public final class JJJVMClass {
     if ("java/lang/Object".equals(jvmClassName)) {
       return java.lang.Object.class;
     }
-    if (jvmClassName.equals(klazz.getJvmClassName())) {
+    if (jvmClassName.equals(klazz.getClassName())) {
       return klazz;
     }
 
@@ -1549,7 +1580,7 @@ public final class JJJVMClass {
             final String className = fieldRef.getClassName();
             final String fieldName = fieldRef.getName();
             final String fieldSignature = fieldRef.getSignature();
-            final Object resolvedClass = className.equals(this.getJvmClassName()) ? this : this.provider.resolveClass(className);
+            final Object resolvedClass = className.equals(this.getClassName()) ? this : this.provider.resolveClass(className);
             final Object value;
 
             if (resolvedClass instanceof JJJVMClass) {
@@ -1668,7 +1699,7 @@ public final class JJJVMClass {
                 resolvedKlazz = objInstance instanceof JJJVMObject ? ((JJJVMObject) objInstance).getKlazz() : this.provider.resolveClass(objInstance.getClass().getName().replace('.', '/'));
               }
               else {
-                resolvedKlazz = klazzName.equals(this.getJvmClassName()) ? this : this.provider.resolveClass(klazzName);
+                resolvedKlazz = klazzName.equals(this.getClassName()) ? this : this.provider.resolveClass(klazzName);
               }
               Object result = null;
               if (resolvedKlazz instanceof JJJVMClass) {
@@ -2005,7 +2036,7 @@ public final class JJJVMClass {
   public JJJVMObject newInstance(final String constructorSignature, final Object[] _arguments, final Object[] stack, final Object[] vars) throws Throwable {
     final JJJVMClassMethod constructor = this.findMethod("<init>", constructorSignature);
     if (constructor == null) {
-      throw new IllegalAccessException("Can't find the constructor [" + getJvmClassName() + ' ' + constructorSignature + ']');
+      throw new IllegalAccessException("Can't find the constructor [" + getClassName() + ' ' + constructorSignature + ']');
     }
     final JJJVMObject result = new JJJVMObject(this);
     initFields(result);

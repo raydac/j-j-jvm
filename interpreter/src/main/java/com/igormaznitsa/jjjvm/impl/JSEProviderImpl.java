@@ -69,10 +69,24 @@ public class JSEProviderImpl implements JJJVMProvider {
   }
 
   public JJJVMClass resolveInnerClass(final JJJVMClass caller, final JJJVMInnerClassRecord innerClassRecord) throws Throwable {
-    final String innerClassname = innerClassRecord.getInnerClassInfo().getClassName();
-    final JJJVMClass result = new JJJVMClass(new ByteArrayInputStream(this.classBodyProvider.loadClass(innerClassname)),this);
-    synchronized(this.classCache){
-      this.classCache.put(innerClassname, result);
+    final String outerClassName = innerClassRecord.getOuterClassInfo() == null ? null : innerClassRecord.getOuterClassInfo().getClassName();
+    final String innerClassName = innerClassRecord.getInnerClassInfo().getClassName();
+
+    final JJJVMClass result;
+
+    synchronized (this.classCache) {
+      if (outerClassName != null && !this.classCache.containsKey(outerClassName) && !JJJVMClass.isClassLoading(outerClassName)) {
+        final JJJVMClass outerClass = new JJJVMClass(new ByteArrayInputStream(this.classBodyProvider.loadClass(outerClassName)), this);
+        this.classCache.put(outerClassName, outerClass);
+        result = (JJJVMClass) this.classCache.get(innerClassName);
+        if (result == null) {
+          throw new Error("Unexpectedstate, inner class [" + innerClassName + "] is not loaded");
+        }
+      }
+      else {
+        result = new JJJVMClass(new ByteArrayInputStream(this.classBodyProvider.loadClass(innerClassName)), this);
+        this.classCache.put(innerClassName, result);
+      }
     }
     return result;
   }
@@ -271,7 +285,7 @@ public class JSEProviderImpl implements JJJVMProvider {
       boolean result = true;
       if (value instanceof JJJVMObject) {
         final JJJVMObject jjjvmObj = (JJJVMObject) value;
-        final String objClassName = jjjvmObj.getKlazz().getJvmClassName();
+        final String objClassName = jjjvmObj.getKlazz().getClassName();
 
         Boolean flag = record.get(objClassName);
         if (flag == null) {

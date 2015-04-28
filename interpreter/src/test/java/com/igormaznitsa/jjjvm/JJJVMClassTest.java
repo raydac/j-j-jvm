@@ -1396,11 +1396,22 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   }
 
   @Test
+  public void testClassName() throws Throwable {
+    final JJJVMProvider provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInnerClasses$NonStaticClass");
+
+    assertEquals("com/igormaznitsa/jjjvm/testclasses/TestInnerClasses$NonStaticClass", testKlazz.getClassName());
+    assertEquals("com.igormaznitsa.jjjvm.testclasses.TestInnerClasses$NonStaticClass", testKlazz.getName());
+    assertEquals("com.igormaznitsa.jjjvm.testclasses.TestInnerClasses.NonStaticClass", testKlazz.getCanonicalName());
+  }
+  
+  @Test
   public void testIntegration_TestInnerClasses() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInnerClasses");
-    assertEquals("TestInnerClasses.java",testKlazz.getSourceFile());
+    assertEquals(0,JJJVMClass.getNumberOfLoadingClasses());
     
+    assertEquals("TestInnerClasses.java",testKlazz.getSourceFile());
     final JJJVMObject instance = testKlazz.newInstance(true);
     
     final JJJVMClassMethod test = testKlazz.findMethod("test", "(II)I");
