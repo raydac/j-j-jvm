@@ -366,16 +366,10 @@ public class JSEProviderImpl implements JJJVMProvider {
   }
 
   public void doThrow(final JJJVMClass caller, final Object objectProvidedAsThrowable) throws Throwable {
-    if (objectProvidedAsThrowable instanceof JJJVMThrowable) {
-      throw (Throwable) objectProvidedAsThrowable;
-    }
-    else {
-      if (objectProvidedAsThrowable instanceof RuntimeException) {
-        throw new JJJVMRuntimeException((Throwable) objectProvidedAsThrowable);
-      }
-      else {
-        throw new JJJVMRuntimeException((Throwable) objectProvidedAsThrowable);
-      }
+    if (objectProvidedAsThrowable instanceof Throwable){
+      throw (Throwable)objectProvidedAsThrowable;
+    }else{
+      throw new Throwable(objectProvidedAsThrowable.toString());
     }
   }
 
