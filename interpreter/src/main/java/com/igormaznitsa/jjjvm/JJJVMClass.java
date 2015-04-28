@@ -22,6 +22,11 @@ import java.lang.reflect.Array;
 import java.util.*;
 import java.util.Map.Entry;
 
+/**
+ * Implements class container, can execute methods.
+ * @see JJJVMClassMethod
+ * @see JJJVMClassField
+ */
 public final class JJJVMClass {
 
   //-----------------------------
@@ -34,6 +39,8 @@ public final class JJJVMClass {
   public static final int ACC_ANNOTATION = 0x2000;
   public static final int ACC_ENUM = 0x4000;
   //-----------------------------
+  private static final String ATTR_INNERCLASSES = "InnerClasses";
+  //-----------------------------
   private final int classFileFormatVersion;
   private final int classAccessFlags;
   private final int classNameIndex;
@@ -43,7 +50,8 @@ public final class JJJVMClass {
   private final Map<String, JJJVMClassMethod> methodMap;
   private final JJJVMProvider provider;
   private final JJJVMConstantPool constantPool;
-
+  private final JJJVMInnerClassRecord [] innerClasses;
+  
   private static final Map<String, Integer> argNumberMap = new HashMap<String, Integer>();
 
   JJJVMClass() {
@@ -56,6 +64,7 @@ public final class JJJVMClass {
     this.constantPool = null;
     this.methodMap = null;
     this.fieldMap = null;
+    this.innerClasses = null;
   }
 
   public JJJVMClass(final InputStream inStream, final JJJVMProvider externalProcessor) throws Throwable {
@@ -81,11 +90,27 @@ public final class JJJVMClass {
     final int numberOfInterfaces = readStr.readUnsignedShort();
     this.implementedInterfaces = new String[numberOfInterfaces];
     for (int i = 0; i < numberOfInterfaces; i++) {
-      this.implementedInterfaces[i] = this.constantPool.get(readStr.readUnsignedShort()).asString();
+      final String interfaceClassName = this.constantPool.get(readStr.readUnsignedShort()).asString();
+      this.implementedInterfaces[i] = interfaceClassName;
+      this.provider.resolveClass(interfaceClassName);
     }
     this.fieldMap = loadFields(readStr);
     this.methodMap = loadMethods(readStr);
-    skipAllAttributes(readStr);
+    
+    JJJVMInnerClassRecord [] detectedInnerClassess = null;
+    int classAttributeNumber = readStr.readUnsignedShort();
+    while(--classAttributeNumber>=0){
+      final int nameIndex = readStr.readUnsignedShort();
+      final int dataSize = readStr.readInt();
+      final String attrName = this.constantPool.get(nameIndex).asString();
+      if (ATTR_INNERCLASSES.equals(attrName)){
+        detectedInnerClassess = readInnerClasses(readStr);
+      }else{
+        readStr.skipBytes(dataSize);
+      }
+    }
+    this.innerClasses = detectedInnerClassess == null ? new JJJVMInnerClassRecord[0] : detectedInnerClassess;
+    
     final JJJVMClassMethod clinitMethod = findMethod("<clinit>", "()V");
     if (clinitMethod != null) {
       try {
@@ -97,6 +122,22 @@ public final class JJJVMClass {
     }
   }
 
+  private JJJVMInnerClassRecord [] readInnerClasses(final DataInputStream inStream) throws Throwable {
+    int numberOfClassess = inStream.readUnsignedShort();
+    final JJJVMInnerClassRecord [] result = new JJJVMInnerClassRecord[numberOfClassess];
+    for(int i=0;i<numberOfClassess;i++){
+      result[i] = new JJJVMInnerClassRecord(this, inStream);
+      if (!this.getJvmClassName().equals(result[i].getInnerClassInfo().getClassName())){
+        this.provider.resolveInnerClass(this, result[i]);
+      }
+    }
+    return result;
+  }
+  
+  public JJJVMInnerClassRecord [] getInnerClassRecords(){
+    return this.innerClasses;
+  }
+  
   public String getSuperclassName() {
     return this.constantPool.get(this.superClassNameIndex).asString();
   }
@@ -1937,14 +1978,13 @@ public final class JJJVMClass {
   }
 
   public JJJVMObject newInstance(final boolean invokeDefaultConstructor) throws Throwable {
-    final JJJVMClassMethod constructor = this.findDeclaredMethod("<init>", "()V");
-
-    if (constructor == null) {
-      throw new IllegalAccessException("Can't find the default constructor");
-    }
     final JJJVMObject result = new JJJVMObject(this);
     initFields(result);
     if (invokeDefaultConstructor) {
+      final JJJVMClassMethod constructor = this.findDeclaredMethod("<init>", "()V");
+      if (constructor == null) {
+        throw new IllegalAccessException("Can't find the default constructor");
+      }
       invoke(result, constructor, null, null, null);
     }
     return result;

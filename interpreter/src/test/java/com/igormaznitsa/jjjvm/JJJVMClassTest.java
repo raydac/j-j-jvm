@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.imageio.IIOException;
 import org.apache.bcel.generic.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -20,7 +19,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
       throw ex;
     }
     catch (Throwable thr) {
-      throw new IIOException("Error", thr);
+      throw new IOException("Error", thr);
     }
   }
 
@@ -1394,9 +1393,19 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     assertSame(theVector, result);
     assertArrayEquals(new Object[]{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14}, result.toArray());
     assertArrayEquals(new Object[]{0,1,2,3,4,5,6,7,8,9}, ((Vector) testKlazz.invoke(obj, makeVector, null, null, null)).toArray());
-  
   }
 
+  @Test
+  public void testIntegration_TestInnerClasses() throws Throwable {
+    final JJJVMProvider provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInnerClasses");
+    
+    final JJJVMObject instance = testKlazz.newInstance(true);
+    
+    final JJJVMClassMethod test = testKlazz.findMethod("test", "(II)I");
+    assertEquals(96, testKlazz.invoke(instance, test, new Object[]{123,456}, null, null));
+  }
+  
   @Test
   public void testIntegration_TestThrow() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
@@ -1435,7 +1444,6 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
       assertEquals("ise",ex.getMessage());
       assertEquals("npe",ex.getCause().getMessage());
     }
-    
   }
   
   @Test

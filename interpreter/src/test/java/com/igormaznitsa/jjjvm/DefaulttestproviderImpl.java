@@ -64,4 +64,9 @@ public class DefaulttestproviderImpl implements JJJVMProvider {
     fail("doMonitor");
   }
 
+  public JJJVMClass resolveInnerClass(JJJVMClass caller, JJJVMInnerClassRecord innerClassRecord) throws Throwable {
+    fail("resolveInnerClass");
+    return null;
+  }
+
 }

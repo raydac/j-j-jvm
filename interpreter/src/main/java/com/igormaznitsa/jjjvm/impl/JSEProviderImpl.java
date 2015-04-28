@@ -68,6 +68,15 @@ public class JSEProviderImpl implements JJJVMProvider {
     this.classBodyProvider = classLoader;
   }
 
+  public JJJVMClass resolveInnerClass(final JJJVMClass caller, final JJJVMInnerClassRecord innerClassRecord) throws Throwable {
+    final String innerClassname = innerClassRecord.getInnerClassInfo().getClassName();
+    final JJJVMClass result = new JJJVMClass(new ByteArrayInputStream(this.classBodyProvider.loadClass(innerClassname)),this);
+    synchronized(this.classCache){
+      this.classCache.put(innerClassname, result);
+    }
+    return result;
+  }
+
   public Object resolveClass(final String jvmFormattedClassName) throws Throwable {
     Object clazz = null;
     synchronized (this.classCache) {
@@ -87,7 +96,7 @@ public class JSEProviderImpl implements JJJVMProvider {
 
   public Object allocate(final JJJVMClass caller, final String jvmFormattedClassName) throws Throwable {
     final Object klazz = resolveClass(jvmFormattedClassName);
-    if (klazz == JJJVMClass.class) {
+    if (klazz instanceof JJJVMClass) {
       return ((JJJVMClass) klazz).newInstance(false);
     }
     else {

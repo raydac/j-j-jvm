@@ -29,4 +29,5 @@ public interface JJJVMProvider {
   public void doThrow(JJJVMClass caller, Object objectProvidedAsThrowable) throws Throwable;
   public Object resolveClass(String jvmFormattedClassName) throws Throwable;
   public void doMonitor(JJJVMClass caller, Object object, boolean lock) throws Throwable;
+  public JJJVMClass resolveInnerClass(JJJVMClass caller, JJJVMInnerClassRecord innerClassRecord) throws Throwable;
 }
