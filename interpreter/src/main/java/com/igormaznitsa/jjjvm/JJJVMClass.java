@@ -27,8 +27,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * Contains class parser and JVM byte-code interpreter.
  * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html}
  *
+ * @see JJJVMProvider
+ * @see JJJVMConstantPool
  * @see JJJVMClassMethod
  * @see JJJVMClassField
+ * @see JJJVMObject
  */
 public final class JJJVMClass {
 

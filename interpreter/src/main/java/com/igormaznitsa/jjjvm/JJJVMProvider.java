@@ -15,20 +15,182 @@
  */
 package com.igormaznitsa.jjjvm;
 
+/**
+ * Interface describes service which allows to JJJVMClass to get needed
+ * information and do some business.
+ * @see com.igormaznitsa.jjjvm.impl.JSEProviderImpl
+ */
 public interface JJJVMProvider {
 
+  /**
+   * Make invocation of a method
+   *
+   * @param caller the class calling the method, must not be null
+   * @param instance the object instance, if the method is static then it will
+   * be null
+   * @param jvmFormattedClassName the jvm formatted name
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.2}
+   * of the class which is owner of the method, must not be null
+   * @param methodName the method name, must not be null
+   * @param methodSignature the method signature in standard JVM format
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.3.4}
+   * @param _arguments arguments for the cass
+   * @return the result of invocation, if the method void then null must be
+   * returned
+   * @throws Throwable it will be thrown for problems or inside exceptions
+   */
   public Object invoke(JJJVMClass caller, Object instance, String jvmFormattedClassName, String methodName, String methodSignature, Object[] _arguments) throws Throwable;
+
+  /**
+   * Allocate memory for new instance of a class.
+   *
+   * @param caller the class calling the method, must not be null
+   * @param jvmFormattedClassName the jvm formatted name
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.2}
+   * of the class which instance must be allocated
+   * @return an object describing memory area reserved for new instance, must
+   * not be null
+   * @throws Throwable it will be thrown for errors
+   */
   public Object allocate(JJJVMClass caller, String jvmFormattedClassName) throws Throwable;
+
+  /**
+   * Create array of objects of defined class.
+   *
+   * @param caller the class calling the method, must not be null
+   * @param jvmFormattedClassName the jvm formatted name
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.2}
+   * of class of elements of the generated array
+   * @param arrayLength number of elements in result array, must be zero or
+   * greater
+   * @return single dimensional array for defined class with defined number of
+   * cells, must not be null
+   * @throws Throwable it will be thrown for errors
+   */
   public Object[] newObjectArray(JJJVMClass caller, String jvmFormattedClassName, int arrayLength) throws Throwable;
+
+  /**
+   * Create multi-dimensional array of elements of defined class.
+   *
+   * @param caller the class calling the method, must not be null
+   * @param jvmFormattedClassName the jvm formatted name
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.2}
+   * of class of elements of the generated array
+   * @param arrayDimensions number of elements in every dimension of generated
+   * array, must not be null
+   * @return generated multidimensional array as object, must not be null
+   * @throws Throwable it will be thrown for errors
+   */
   public Object newMultidimensional(JJJVMClass caller, String jvmFormattedClassName, int[] arrayDimensions) throws Throwable;
+
+  /**
+   * Get value from a field of an object.
+   *
+   * @param caller the class calling the method, must not be null
+   * @param obj the object instance which field should be read, it must not be
+   * null
+   * @param fieldName the field name, must not be null
+   * @param fieldSignature the field signature, must not be null
+   * @return the read object from the field
+   * @throws Throwable it will be thrown for errors
+   */
   public Object get(JJJVMClass caller, Object obj, String fieldName, String fieldSignature) throws Throwable;
+
+  /**
+   * Write value into field of Object.
+   *
+   * @param caller the class calling the method, must not be null
+   * @param obj object which field should be written, it must not be null
+   * @param fieldName the field name, must not be null
+   * @param fieldSignature the field signature, must not be null
+   * @param fieldValue the value to be written into the field
+   * @throws Throwable it will be thrown for errors
+   */
   public void set(JJJVMClass caller, Object obj, String fieldName, String fieldSignature, Object fieldValue) throws Throwable;
+
+  /**
+   * Read value from a static field.
+   *
+   * @param caller the class calling the method, must not be null
+   * @param jvmFormattedClassName the jvm formatted name
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.2}
+   * which static field should be read, must not be null
+   * @param fieldName the field name, must not be null
+   * @param fieldSignature the field signature, must not be null
+   * @return the read value from the static field
+   * @throws Throwable it will be thrown for errors
+   */
   public Object getStatic(JJJVMClass caller, String jvmFormattedClassName, String fieldName, String fieldSignature) throws Throwable;
+
+  /**
+   * Write value into a static field.
+   *
+   * @param caller the class calling the method, must not be null
+   * @param jvmFormattedClassName the jvm formatted name
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.2}
+   * which static field should be changed, must not be null
+   * @param fieldName the field name, must not be null
+   * @param fieldSignature the field signature, must not be null
+   * @param value the value to be written into the static field
+   * @throws Throwable it will be thrown for errors
+   */
   public void setStatic(JJJVMClass caller, String jvmFormattedClassName, String fieldName, String fieldSignature, Object value) throws Throwable;
+
+  /**
+   * Check that object can be casted to class.
+   *
+   * @param caller the class calling the method, must not be null
+   * @param jvmFormattedClassName the jvm formatted name
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.2}
+   * of class for which we check the object, must not be null
+   * @param objectToCheck the object to be checked, must not be null
+   * @return true if the object can be casted to the class, false otherwise
+   * @throws Throwable it will be thrown for errors
+   */
   public boolean checkCast(JJJVMClass caller, String jvmFormattedClassName, Object objectToCheck) throws Throwable;
+
+  /**
+   * Throw a Throwable based on provided object.
+   * @param caller the class calling the method, must not be null
+   * @param objectProvidedAsThrowable base object to be used for throwable object constructing
+   * @throws Throwable the exception will be thrown, type of error will be based on the provided object
+   */
   public void doThrow(JJJVMClass caller, Object objectProvidedAsThrowable) throws Throwable;
+
+  /**
+   * Resolve class by its jvm formatted name.
+   * 
+   * @param jvmFormattedClassName the jvm formatted name 
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.2}, must not be null
+   * @return object representing class defined by the name, must not be null
+   * @throws Throwable it will be thrown for errors
+   * @see #resolveInnerClass(com.igormaznitsa.jjjvm.JJJVMClass, com.igormaznitsa.jjjvm.JJJVMInnerClassRecord) 
+   */
   public Object resolveClass(String jvmFormattedClassName) throws Throwable;
+
+  /**
+   * Register object describing a class under some jvm formatted class name.
+   * @param jvmFormattedClassName the jvm formatted name {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.2} of the registering class, must not be null
+   * @param clazz the object describing class, must not be null
+   */
   public void registerExternalClass(String jvmFormattedClassName, Object clazz);
+
+  /**
+   * Lock or unlock monitor for an object.
+   * @param caller the class calling the method, must not be null
+   * @param object object to lock or unlock, must not be null
+   * @param lock true if the object must be locked, false otherwise
+   * @throws Throwable  it will be thrown for errors
+   */
   public void doMonitor(JJJVMClass caller, Object object, boolean lock) throws Throwable;
+
+  /**
+   * Resolve some inner class.
+   * @param caller the class calling the method, must not be null
+   * @param innerClassRecord recod describing inner class info structure, must not be null
+   * @return object describing the inner class, must not be null
+   * @throws Throwable it will be thrown for errors
+   * @see #resolveClass(java.lang.String) 
+   */
   public JJJVMClass resolveInnerClass(JJJVMClass caller, JJJVMInnerClassRecord innerClassRecord) throws Throwable;
 }

@@ -8,14 +8,29 @@ import java.io.IOException;
  * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.6}
  */
 public final class JJJVMInnerClassRecord {
-  private final JJJVMClass declaring;
+  /**
+   * The Declaring class.
+   */
+  private final JJJVMClass declaringClass;
+  /**
+   * The Index in the declaring class constant pool of the inner class info.
+   */
   private final int innerClassInfoIndex;
+  /**
+   * The Index in the declaring class constant pool of the outer class info. it can be 0.
+   */
   private final int outerClassInfoIndex;
+  /**
+   * The Inner class name index in the declaring class constant pool.
+   */
   private final int innerNameIndex;
+  /**
+   * Flags of the inner class.
+   */
   private final int flags;
   
-  public JJJVMInnerClassRecord(final JJJVMClass declaring, final DataInputStream inStream) throws IOException {
-    this.declaring = declaring;
+  JJJVMInnerClassRecord(final JJJVMClass declaring, final DataInputStream inStream) throws IOException {
+    this.declaringClass = declaring;
     this.innerClassInfoIndex = inStream.readUnsignedShort();
     this.outerClassInfoIndex = inStream.readUnsignedShort();
     this.innerNameIndex = inStream.readUnsignedShort();
@@ -27,14 +42,14 @@ public final class JJJVMInnerClassRecord {
   }
   
   public JJJVMConstantPool.Record getInnerClassInfo(){
-    return this.declaring.getConstantPool().get(this.innerClassInfoIndex);
+    return this.declaringClass.getConstantPool().get(this.innerClassInfoIndex);
   }
   
   public JJJVMConstantPool.Record getOuterClassInfo(){
-    return this.declaring.getConstantPool().get(this.outerClassInfoIndex);
+    return this.declaringClass.getConstantPool().get(this.outerClassInfoIndex);
   }
   
   public String getName(){
-    return (String)this.declaring.getConstantPool().get(this.innerNameIndex).asObject();
+    return (String)this.declaringClass.getConstantPool().get(this.innerNameIndex).asObject();
   }
 }

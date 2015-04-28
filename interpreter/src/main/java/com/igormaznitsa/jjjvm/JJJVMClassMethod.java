@@ -18,6 +18,10 @@ package com.igormaznitsa.jjjvm;
 import java.io.DataInputStream;
 import java.io.IOException;
 
+/**
+ * Class contains class method info.
+ * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.6}
+ */
 public final class JJJVMClassMethod {
   // flags of a method
   public static final int ACC_PUBLIC = 0x0001;

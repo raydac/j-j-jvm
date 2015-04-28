@@ -20,10 +20,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.Map.Entry;
 
 /**
- * Implementation of provider for Java SE.
+ * Implementation of provider optimized for Java SE 1.5+.
  *
  * @see sun.misc.Unsafe
  */

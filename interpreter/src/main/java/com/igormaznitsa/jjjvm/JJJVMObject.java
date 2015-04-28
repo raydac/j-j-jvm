@@ -21,11 +21,29 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Object container describing some instances of JJJVMClass.
+ *
+ * @see JJJVMClass#newInstance(boolean) 
+ * @see JJJVMClass#newInstance(java.lang.String, java.lang.Object[], java.lang.Object[], java.lang.Object[]) 
+ */
 public final class JJJVMObject {
 
+  /**
+   * The Class of the object.
+   */
   private final JJJVMClass klazz;
-  private final AtomicBoolean objectIsFinalized = new AtomicBoolean(false);
+  /**
+   * Flag shows that the object is finalized.
+   */
+  private final AtomicBoolean objectFinalized = new AtomicBoolean(false);
+  /**
+   * Map contains values of object fields.
+   */
   private final Map<String, Object> fieldValues = new HashMap<String, Object>();
+  /**
+   * Monitor for the object.
+   */
   private final ReentrantLock monitor = new ReentrantLock();
 
   Object get(final String fieldName, final boolean checkKey) {
@@ -63,11 +81,11 @@ public final class JJJVMObject {
   }
 
   public boolean isFinalized() {
-    return this.objectIsFinalized.get();
+    return this.objectFinalized.get();
   }
 
   public void doFinalize() throws Throwable {
-    if (this.objectIsFinalized.compareAndSet(false, true)) {
+    if (this.objectFinalized.compareAndSet(false, true)) {
       try {
         final JJJVMClassMethod finalizeMethod = klazz.findDeclaredMethod("finalize", "()V");
         if (finalizeMethod != null) {
