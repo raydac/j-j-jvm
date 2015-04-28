@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * Implementation of provider for Java SE.
@@ -91,6 +92,21 @@ public class JSEProviderImpl implements JJJVMProvider {
     return result;
   }
 
+  public void registerExternalClass(final String jvmFormattedClassName, final Object clazz) {
+    if (clazz == null) {
+      throw new NullPointerException("Class is null");
+    }
+    if (jvmFormattedClassName == null) {
+      throw new NullPointerException("Class name is null");
+    }
+    if (!(clazz instanceof Class || clazz instanceof JJJVMClass)) {
+      throw new IllegalArgumentException("unexpected class object");
+    }
+    synchronized (this.classCache) {
+      this.classCache.put(jvmFormattedClassName, clazz);
+    }
+  }
+
   public Object resolveClass(final String jvmFormattedClassName) throws Throwable {
     Object clazz = null;
     synchronized (this.classCache) {
@@ -138,10 +154,12 @@ public class JSEProviderImpl implements JJJVMProvider {
       if ("<init>".equals(methodName)) {
         // constructor
         final Constructor constructor = klazz.getConstructor(paramClasses);
+        constructor.setAccessible(true);
         return constructor.newInstance(arguments);
       }
       else {
-        final Method method = klazz.getMethod(methodName, paramClasses);
+        final Method method = findMethod(klazz, methodName, paramClasses);
+        method.setAccessible(true);
         return method.invoke(instance, arguments);
       }
     }
@@ -231,13 +249,43 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
+  private static Field findField(final Class klazz, final String fieldName) throws Throwable {
+    Field found = klazz.getDeclaredField(fieldName);
+    if (found == null) {
+      final Class superKlazz = klazz.getSuperclass();
+      if (superKlazz != null) {
+        found = findField(superKlazz, fieldName);
+      }
+    }
+    if (found == null) {
+      throw new Error("Can't find field '" + fieldName + '\'');
+    }
+    found.setAccessible(true);
+    return found;
+  }
+
+  private static Method findMethod(final Class klazz, final String methodName, final Class[] types) throws Throwable {
+    Method found = klazz.getDeclaredMethod(methodName, types);
+    if (found == null) {
+      final Class superKlazz = klazz.getSuperclass();
+      if (superKlazz != null) {
+        found = findMethod(superKlazz, methodName, types);
+      }
+    }
+    if (found == null) {
+      throw new Error("Can't find method '" + methodName + '\'');
+    }
+    found.setAccessible(true);
+    return found;
+  }
+
   public Object get(final JJJVMClass caller, final Object obj, final String fieldName, final String fieldSignature) throws Throwable {
     if (obj instanceof JJJVMObject) {
       final JJJVMObject jjjobj = (JJJVMObject) obj;
       return jjjobj.getKlazz().findDeclaredField(fieldName).get(jjjobj);
     }
     else {
-      return obj.getClass().getField(fieldName).get(obj);
+      return findField(obj.getClass(), fieldName).get(obj);
     }
   }
 
@@ -247,7 +295,7 @@ public class JSEProviderImpl implements JJJVMProvider {
       jjjobj.getKlazz().findDeclaredField(fieldName).set(jjjobj, fieldValue);
     }
     else {
-      obj.getClass().getField(fieldName).set(obj, fieldValue);
+      findField(obj.getClass(), fieldName).set(obj, fieldValue);
     }
   }
 
@@ -257,7 +305,7 @@ public class JSEProviderImpl implements JJJVMProvider {
       return ((JJJVMClass) resolved).findDeclaredField(fieldName).getStaticValue();
     }
     else {
-      return ((Class) resolved).getField(fieldName).get(null);
+      return findField((Class) resolved, fieldName).get(null);
     }
   }
 
@@ -267,7 +315,7 @@ public class JSEProviderImpl implements JJJVMProvider {
       ((JJJVMClass) resolved).findDeclaredField(fieldName).setStaticValue(value);
     }
     else {
-      ((Class) resolved).getField(fieldName).set(null, value);
+      findField((Class) resolved, fieldName).set(null, value);
     }
   }
 

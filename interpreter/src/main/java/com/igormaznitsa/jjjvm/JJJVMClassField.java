@@ -18,6 +18,10 @@ package com.igormaznitsa.jjjvm;
 import java.io.DataInputStream;
 import java.io.IOException;
 
+/**
+ * Describes a class field.
+ * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.5}
+ */
 public final class JJJVMClassField {
   public static final int ACC_PUBLIC = 0x0001;
   public static final int ACC_PRIVATE = 0x0002;

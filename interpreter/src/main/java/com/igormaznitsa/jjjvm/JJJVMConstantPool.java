@@ -18,12 +18,17 @@ package com.igormaznitsa.jjjvm;
 import java.io.DataInputStream;
 import java.io.IOException;
 
+/**
+ * Container of class constant pool.
+ * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4}
+ */
 public final class JJJVMConstantPool {
 
   public static final class Record {
 
     /**
      * Constant pool UTF8 string item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.7}
      */
     public static final int CONSTANT_UTF8 = 1;
     /**
@@ -32,46 +37,71 @@ public final class JJJVMConstantPool {
     public static final int CONSTANT_UNICODE = 2;
     /**
      * Constant pool INTEGER item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.4}
      */
     public static final int CONSTANT_INTEGER = 3;
     /**
      * Constant pool FLOAT item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.4}
      */
     public static final int CONSTANT_FLOAT = 4;
     /**
      * Constant pool LONG item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.5}
      */
     public static final int CONSTANT_LONG = 5;
     /**
      * Constant pool DOUBLE item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.5}
      */
     public static final int CONSTANT_DOUBLE = 6;
     /**
      * Constant pool Class Reference item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.1}
      */
     public static final int CONSTANT_CLASSREF = 7;
     /**
      * Constant pool String Reference item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.3}
      */
     public static final int CONSTANT_STRING = 8;
     /**
      * Constant pool Field Reference item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.2}
      */
     public static final int CONSTANT_FIELDREF = 9;
     /**
      * Constant pool Method Reference item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.2}
      */
     public static final int CONSTANT_METHODREF = 10;
     /**
      * Constant pool INTERFACE METHOD instance.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.2}
      */
     public static final int CONSTANT_INTERFACEMETHOD = 11;
     /**
      * Constant pool NAME+TYPE Reference item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.6}
      */
     public static final int CONSTANT_NAMETYPEREF = 12;
+
+    /**
+     * Constant pool Method Handle item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.8}
+     */
     public static final int CONSTANT_METHODHANDLE = 15;
+
+    /**
+     * Constant pool Method Type item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.9}
+     */
     public static final int CONSTANT_METHODTYPE = 16;
+
+    /**
+     * Constant pool Invoke dynamic item.
+     * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.10}
+     */
     public static final int CONSTANT_INVOKEDYNAMIC = 18;
 
     private final int type;
@@ -119,9 +149,9 @@ public final class JJJVMConstantPool {
           return (String) this.value;
         case CONSTANT_CLASSREF:
         case CONSTANT_STRING:
-          return (String)this.cpool.records[this.asInt()].asObject();
+          return (String) this.cpool.records[this.asInt()].asObject();
         default:
-            throw new IllegalArgumentException("Can't be presented as String [" + this.type + ']');
+          throw new IllegalArgumentException("Can't be presented as String [" + this.type + ']');
       }
     }
 
@@ -201,9 +231,9 @@ public final class JJJVMConstantPool {
   private final Record[] records;
   private final JJJVMClass klazz;
 
-  public JJJVMConstantPool(final JJJVMClass klazz, final DataInputStream inStream) throws IOException {
+  JJJVMConstantPool(final JJJVMClass klazz, final DataInputStream inStream) throws IOException {
     int index = 0;
-    
+
     this.klazz = klazz;
 
     int itemsNumber = inStream.readUnsignedShort();
@@ -213,7 +243,7 @@ public final class JJJVMConstantPool {
 
     final StringBuilder strBuffer = new StringBuilder(128);
 
-    while(itemsNumber > 0) {
+    while (itemsNumber > 0) {
       boolean doubleRecordItem = false;
       final int recordType = inStream.readUnsignedByte();
       final Object recordValue;
@@ -250,16 +280,16 @@ public final class JJJVMConstantPool {
           doubleRecordItem = true;
         }
         break;
-        case Record.CONSTANT_CLASSREF: 
+        case Record.CONSTANT_CLASSREF:
         case Record.CONSTANT_STRING: {
           recordValue = inStream.readUnsignedShort();
         }
         break;
         case Record.CONSTANT_FIELDREF:
         case Record.CONSTANT_METHODREF:
-        case Record.CONSTANT_INTERFACEMETHOD: 
-        case Record.CONSTANT_NAMETYPEREF: 
-        case Record.CONSTANT_METHODHANDLE: 
+        case Record.CONSTANT_INTERFACEMETHOD:
+        case Record.CONSTANT_NAMETYPEREF:
+        case Record.CONSTANT_METHODHANDLE:
         case Record.CONSTANT_INVOKEDYNAMIC: {
           final int high = inStream.readUnsignedShort();
           final int low = inStream.readUnsignedShort();

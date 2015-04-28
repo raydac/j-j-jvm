@@ -3,7 +3,6 @@ package com.igormaznitsa.jjjvm;
 import java.io.*;
 import javassist.*;
 import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.ConstantValue;
 import org.apache.bcel.generic.*;
 import org.apache.commons.io.FileUtils;
 import org.junit.Assert;

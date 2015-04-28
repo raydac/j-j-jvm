@@ -24,7 +24,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Implements class container, can execute methods.
+ * Contains class parser and JVM byte-code interpreter.
+ * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html}
  *
  * @see JJJVMClassMethod
  * @see JJJVMClassField
@@ -49,8 +50,8 @@ public final class JJJVMClass {
   private final int classNameIndex;
   private final int superClassNameIndex;
   private final String[] implementedInterfaces;
-  private final Map<String, JJJVMClassField> fieldMap;
-  private final Map<String, JJJVMClassMethod> methodMap;
+  private final Map<String, JJJVMClassField> declaredFields;
+  private final Map<String, JJJVMClassMethod> declaredMethods;
   private final JJJVMProvider provider;
   private final JJJVMConstantPool constantPool;
   private final JJJVMInnerClassRecord[] innerClasses;
@@ -67,8 +68,8 @@ public final class JJJVMClass {
     this.implementedInterfaces = null;
     this.provider = null;
     this.constantPool = null;
-    this.methodMap = null;
-    this.fieldMap = null;
+    this.declaredMethods = null;
+    this.declaredFields = null;
     this.innerClasses = null;
     this.sourceFile = null;
   }
@@ -104,8 +105,8 @@ public final class JJJVMClass {
         this.implementedInterfaces[i] = interfaceClassName;
         this.provider.resolveClass(interfaceClassName);
       }
-      this.fieldMap = loadFields(readStr);
-      this.methodMap = loadMethods(readStr);
+      this.declaredFields = loadFields(readStr);
+      this.declaredMethods = loadMethods(readStr);
 
       JJJVMInnerClassRecord[] detectedInnerClassess = null;
       String sourceFileName = null;
@@ -136,6 +137,8 @@ public final class JJJVMClass {
           throw new IOException("Error during <clinit>");
         }
       }
+      
+      this.provider.registerExternalClass(this.getClassName(), this);
     }
     finally {
       loadingClasses.remove(getClassName());
@@ -326,7 +329,7 @@ public final class JJJVMClass {
   }
 
   public final JJJVMClassField findDeclaredField(final String fieldName) {
-    return this.fieldMap.get(fieldName);
+    return this.declaredFields.get(fieldName);
   }
 
   public final JJJVMClassMethod findMethod(final String methodName, final String methodSignature) throws Throwable {
@@ -341,7 +344,7 @@ public final class JJJVMClass {
   }
 
   public final JJJVMClassMethod findDeclaredMethod(final String methodName, final String methodSignature) {
-    return this.methodMap.get(makeMethodUID(methodName, methodSignature));
+    return this.declaredMethods.get(makeMethodUID(methodName, methodSignature));
   }
 
   public Object invoke(final JJJVMObject instance, final JJJVMClassMethod methodToInvoke, final Object[] args, final Object[] stack, final Object[] vars) throws Throwable {
@@ -1703,12 +1706,13 @@ public final class JJJVMClass {
               }
               Object result = null;
               if (resolvedKlazz instanceof JJJVMClass) {
-                final JJJVMClass jjjvmclazz = (JJJVMClass) resolvedKlazz;
+                final JJJVMClassMethod foundMethod = ((JJJVMClass)resolvedKlazz).findMethod(methodName, signature);
+                final JJJVMClass jjjvmclazz = foundMethod.getDeclaringClass();
                 if (jjjvmclazz == this) {
-                  result = this._invoke((JJJVMObject) objInstance, jjjvmclazz.findMethod(methodName, signature), argsArray, regSP, localMethodStack, null);
+                  result = jjjvmclazz._invoke((JJJVMObject) objInstance, foundMethod, argsArray, regSP, localMethodStack, null);
                 }
                 else {
-                  result = jjjvmclazz.invoke((JJJVMObject) objInstance, jjjvmclazz.findMethod(methodName, signature), argsArray, null, null);
+                  result = jjjvmclazz.invoke((JJJVMObject) objInstance, foundMethod, argsArray, null, null);
                 }
               }
               else {
@@ -1933,7 +1937,7 @@ public final class JJJVMClass {
       catch (Throwable thr) {
         JJJVMCatchBlockDescriptor record = null;
 
-        for (final JJJVMCatchBlockDescriptor r : method.getCatchBlocks()) {
+        for (final JJJVMCatchBlockDescriptor r : method.getCatchBlockDescriptors()) {
           if (r.isActiveForAddress(lastPC)) {
             final String exceptionClassName = r.getJvmFormattedClassName();
             if (exceptionClassName == null) {
@@ -2050,7 +2054,7 @@ public final class JJJVMClass {
       ((JJJVMClass) parent).initFields(classInstance);
     }
 
-    for (final Entry<String, JJJVMClassField> current : this.fieldMap.entrySet()) {
+    for (final Entry<String, JJJVMClassField> current : this.declaredFields.entrySet()) {
       final JJJVMClassField theField = current.getValue();
 
       final String fieldSignature = theField.getSignature();
@@ -2091,11 +2095,11 @@ public final class JJJVMClass {
     }
   }
 
-  Map<String, JJJVMClassField> getFieldMap() {
-    return this.fieldMap;
+  Map<String, JJJVMClassField> getDeclaredFields() {
+    return this.declaredFields;
   }
 
-  Map<String, JJJVMClassMethod> getMethodMap() {
-    return this.methodMap;
+  Map<String, JJJVMClassMethod> getDeclaredMethods() {
+    return this.declaredMethods;
   }
 }

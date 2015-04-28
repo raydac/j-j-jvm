@@ -4,12 +4,10 @@
   <parent>
     <groupId>com.igormaznitsa</groupId>
     <artifactId>j-j-jvm</artifactId>
-    <version>${main.version}</version>
-    <relativePath>../pom.xml</relativePath>
+    <version>1.0.4-SNAPSHOT</version>
   </parent>
   <artifactId>j-j-jvm-interpreter</artifactId>
   <packaging>jar</packaging>
-  <version>${main.version}</version>
   
   <description>yet another JVM interpreter written in Java</description>
   
@@ -41,7 +39,6 @@
       </build>
     </profile>
   </profiles>
-
   
   <dependencies>
     <dependency>
@@ -57,9 +54,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>javassist</groupId>
+      <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
-      <version>3.12.1.GA</version>
+      <version>3.19.0-GA</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -118,7 +115,6 @@
           </execution>
         </executions>
       </plugin>
-
     </plugins>
   </build>
   

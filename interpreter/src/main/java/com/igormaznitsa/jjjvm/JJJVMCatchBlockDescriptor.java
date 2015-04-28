@@ -18,6 +18,10 @@ package com.igormaznitsa.jjjvm;
 import java.io.DataInputStream;
 import java.io.IOException;
 
+/**
+ * Record contains data about try..catch block.
+ * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.5}
+ */
 public final class JJJVMCatchBlockDescriptor {
   private final int pcStart;
   private final int pcEnd;

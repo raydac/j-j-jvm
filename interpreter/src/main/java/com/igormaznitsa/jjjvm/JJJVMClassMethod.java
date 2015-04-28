@@ -58,7 +58,6 @@ public final class JJJVMClassMethod {
   private final int maxStackDepth;
   private final int maxLocals;
   private final byte[] bytecode;
-  private final int methodUID;
   
   JJJVMClassMethod(final JJJVMClass declaringClass, final DataInputStream inStream) throws IOException {
     final JJJVMConstantPool cpool = declaringClass.getConstantPool();
@@ -69,7 +68,6 @@ public final class JJJVMClassMethod {
     final int descriptorIndex = inStream.readUnsignedShort();
     this.name = cpool.get(nameIndex).asString();
     this.signature = cpool.get(descriptorIndex).asString();
-    this.methodUID = (nameIndex << 16) | descriptorIndex;
     
     int numberOfAttrs = inStream.readUnsignedShort();
     
@@ -127,16 +125,16 @@ public final class JJJVMClassMethod {
     this.bytecode = lbytecode;
   } 
 
+  public Object invoke(final JJJVMObject instance, final Object[] arguments) throws Throwable {
+    return this.declaringClass.invoke(instance, this, arguments, null, null);
+  }
+  
   public JJJVMClass getDeclaringClass(){
     return this.declaringClass;
   }
   
-  public JJJVMCatchBlockDescriptor [] getCatchBlocks() {
+  public JJJVMCatchBlockDescriptor [] getCatchBlockDescriptors() {
     return this.catchBlocks;
-  }
-
-  public int getUID() {
-    return this.methodUID;
   }
 
   public String getName() {

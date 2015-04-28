@@ -28,6 +28,7 @@ public interface JJJVMProvider {
   public boolean checkCast(JJJVMClass caller, String jvmFormattedClassName, Object objectToCheck) throws Throwable;
   public void doThrow(JJJVMClass caller, Object objectProvidedAsThrowable) throws Throwable;
   public Object resolveClass(String jvmFormattedClassName) throws Throwable;
+  public void registerExternalClass(String jvmFormattedClassName, Object clazz);
   public void doMonitor(JJJVMClass caller, Object object, boolean lock) throws Throwable;
   public JJJVMClass resolveInnerClass(JJJVMClass caller, JJJVMInnerClassRecord innerClassRecord) throws Throwable;
 }

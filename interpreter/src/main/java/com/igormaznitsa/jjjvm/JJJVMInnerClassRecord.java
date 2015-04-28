@@ -3,6 +3,10 @@ package com.igormaznitsa.jjjvm;
 import java.io.DataInputStream;
 import java.io.IOException;
 
+/**
+ * Structure describes an inner class.
+ * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.6}
+ */
 public final class JJJVMInnerClassRecord {
   private final JJJVMClass declaring;
   private final int innerClassInfoIndex;

@@ -2,7 +2,7 @@ package com.igormaznitsa.jjjvm;
 
 import static org.junit.Assert.fail;
 
-public class DefaulttestproviderImpl implements JJJVMProvider {
+public class TestProviderImpl implements JJJVMProvider {
 
   public Object invoke(final JJJVMClass source, final Object obj, final String clazzName, final String methodName, final String methodSignature, final Object[] _arguments) throws Throwable{
     if (!(methodName.equals("<init>") && methodSignature.equals("()V"))) fail("invoke");
@@ -69,4 +69,7 @@ public class DefaulttestproviderImpl implements JJJVMProvider {
     return null;
   }
 
+  public void registerExternalClass(String jvmFormattedClassName, Object clazz) {
+  }
+  
 }

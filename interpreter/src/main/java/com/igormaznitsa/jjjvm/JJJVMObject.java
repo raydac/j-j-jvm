@@ -35,8 +35,8 @@ public final class JJJVMObject {
     return this.fieldValues.get(fieldName);
   }
 
-  void set(final String fieldName, final Object value, final boolean checkKey) {
-    if (checkKey && !this.fieldValues.containsKey(fieldName)) {
+  void set(final String fieldName, final Object value, final boolean checkThatFieldPresented) {
+    if (checkThatFieldPresented && !this.fieldValues.containsKey(fieldName)) {
       throw new IllegalArgumentException("Unknown field name '" + fieldName + '\'');
     }
     this.fieldValues.put(fieldName, value);
@@ -48,7 +48,7 @@ public final class JJJVMObject {
 
   JJJVMObject(final JJJVMClass klazz) throws Throwable {
     this.klazz = klazz;
-    final Map<String, JJJVMClassField> map = klazz.getFieldMap();
+    final Map<String, JJJVMClassField> map = klazz.getDeclaredFields();
     // init constants
     for (final Entry<String, JJJVMClassField> e : map.entrySet()) {
       final JJJVMClassField field = e.getValue();
