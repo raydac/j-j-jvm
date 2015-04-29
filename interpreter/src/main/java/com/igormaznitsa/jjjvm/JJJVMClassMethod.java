@@ -106,7 +106,7 @@ public final class JJJVMClassMethod {
             lcatchBlocks[li] = new JJJVMCatchBlockDescriptor(cpool, inStream);
           }
           // skip all other attributes in the code attribute
-          JJJVMClass.skipAllAttributes(inStream);
+          JJJVMClass.skipAllAttributesInStream(inStream);
         }
         else {
           // skip other attribute data

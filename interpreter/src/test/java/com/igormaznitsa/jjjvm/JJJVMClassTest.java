@@ -1330,9 +1330,9 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     final JJJVMProvider provider = new JSEProviderImpl(this);
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestTableswitch");
     
-    assertTrue(testKlazz.canBeCastTo("java/lang/Object"));
-    assertFalse(testKlazz.canBeCastTo("java/util/Map"));
-    assertTrue(testKlazz.canBeCastTo("java/io/Serializable"));
+    assertTrue(testKlazz.tryCastTo("java/lang/Object"));
+    assertFalse(testKlazz.tryCastTo("java/util/Map"));
+    assertTrue(testKlazz.tryCastTo("java/io/Serializable"));
     
     assertEquals(Integer.valueOf(1234), testKlazz.findField("sfield1").getStaticValue());
     assertEquals(Long.valueOf(56787L), testKlazz.findField("sfield2").getStaticValue());
@@ -1396,10 +1396,11 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   }
 
   @Test
-  public void testClassName() throws Throwable {
+  public void testClassNameAndVersion() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInnerClasses$NonStaticClass");
 
+    assertEquals("must be Java 1.5",0x0031, testKlazz.getClassFormatVersion());
     assertEquals("com/igormaznitsa/jjjvm/testclasses/TestInnerClasses$NonStaticClass", testKlazz.getClassName());
     assertEquals("com.igormaznitsa.jjjvm.testclasses.TestInnerClasses$NonStaticClass", testKlazz.getName());
     assertEquals("com.igormaznitsa.jjjvm.testclasses.TestInnerClasses.NonStaticClass", testKlazz.getCanonicalName());

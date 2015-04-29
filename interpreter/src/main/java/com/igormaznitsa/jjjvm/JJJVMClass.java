@@ -63,6 +63,7 @@ public final class JJJVMClass {
   private static final Map<String, Integer> argNumberMap = new HashMap<String, Integer>();
   private static final Map<String, String> loadingClasses = new ConcurrentHashMap<String, String>();
 
+  // constructor for test purposes
   JJJVMClass() {
     this.classFileFormatVersion = 0;
     this.classAccessFlags = 0;
@@ -77,15 +78,24 @@ public final class JJJVMClass {
     this.sourceFile = null;
   }
 
-  public JJJVMClass(final InputStream inStream, final JJJVMProvider externalProcessor) throws Throwable {
-    if (externalProcessor == null) {
+  /**
+   * It parses and create instance of class which represented by input stream.
+   *
+   * @param inStream stream contains array describing a compiled java class,
+   * must not be null
+   * @param provider a provider which implements misc service methods to process
+   * byte code and resolve classes, must not be null
+   * @throws Throwable it will be thrown for errors
+   */
+  public JJJVMClass(final InputStream inStream, final JJJVMProvider provider) throws Throwable {
+    if (provider == null) {
       throw new NullPointerException("External processor must be provided");
     }
     if (inStream == null) {
       throw new NullPointerException("Input stream must be provided");
     }
 
-    this.provider = externalProcessor;
+    this.provider = provider;
 
     final DataInputStream readStr = inStream instanceof DataInputStream ? (DataInputStream) inStream : new DataInputStream(inStream);
 
@@ -140,7 +150,7 @@ public final class JJJVMClass {
           throw new IOException("Error during <clinit>");
         }
       }
-      
+
       this.provider.registerExternalClass(this.getClassName(), this);
     }
     finally {
@@ -148,6 +158,12 @@ public final class JJJVMClass {
     }
   }
 
+  /**
+   * Get the source file name for the class.
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.10}
+   *
+   * @return the found source name or null if there was not any definition.
+   */
   public String getSourceFile() {
     return this.sourceFile;
   }
@@ -167,46 +183,110 @@ public final class JJJVMClass {
     return result;
   }
 
-  public static boolean isClassLoading(final String className){
-    return loadingClasses.containsKey(className);
+  /**
+   * Check, is the class still in loading mode.
+   *
+   * @param jvmFormattedClassName class name to check, must not be null
+   * @return true if the class with the name is still in the loading list, false
+   * otherwise
+   */
+  public static boolean isClassLoading(final String jvmFormattedClassName) {
+    return loadingClasses.containsKey(jvmFormattedClassName);
   }
-  
-  public static int getNumberOfLoadingClasses(){
+
+  /**
+   * Get number of currently loading classes.
+   *
+   * @return number of currently loading classes.
+   */
+  public static int getNumberOfLoadingClasses() {
     return loadingClasses.size();
   }
-  
+
+  /**
+   * Get records describing inner classes of the class.
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.6}
+   *
+   * @return array of the inner class records, must not be null
+   */
   public JJJVMInnerClassRecord[] getInnerClassRecords() {
     return this.innerClasses;
   }
 
+  /**
+   * Get the name of the superclass.
+   *
+   * @return the superclass jvm formatted name, must not be null
+   */
   public String getSuperclassName() {
     return this.constantPool.get(this.superClassNameIndex).asString();
   }
 
+  /**
+   * Resolve and return object representing superclass.
+   *
+   * @return object represents superclass, must not be null
+   * @throws Throwable it will be thrown if impossible to resolve class or some
+   * errors
+   */
   public Object resolveSuperclass() throws Throwable {
     return this.provider.resolveClass(getSuperclassName());
   }
 
+  /**
+   * Get array contains jvm formatted names of interfaces implemented by the
+   * class.
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.1}
+   *
+   * @return array contains names of interfaces, must not be null
+   */
   public String[] getInterfaces() {
     return this.implementedInterfaces;
   }
 
+  /**
+   * Get jvm formatted class name.
+   *
+   * @return class name in jvm format like "java/lang/Object$1"
+   */
   public String getClassName() {
     return this.constantPool.get(this.classNameIndex).asString();
   }
 
+  /**
+   * Get name in normal format.
+   *
+   * @return class name in normal format like "java.lang.Object$1"
+   */
   public String getName() {
-    return getClassName().replace('/', '.');
+    return normalizeClassName(getClassName());
   }
 
+  /**
+   * Get name in canonical format.
+   *
+   * @return class name in canonical format like "java.lang.Object.1"
+   */
   public String getCanonicalName() {
     return getName().replace('$', '.');
   }
 
-  public int getCompilerVersion() {
+  /**
+   * Get class format version.
+   *
+   * @return the class format version
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.1}
+   */
+  public int getClassFormatVersion() {
     return this.classFileFormatVersion;
   }
 
+  /**
+   * Get the constant pool of the class
+   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4}
+   *
+   * @return the constant pool of the class, must not be null
+   */
   public JJJVMConstantPool getConstantPool() {
     return this.constantPool;
   }
@@ -239,7 +319,7 @@ public final class JJJVMClass {
     return result;
   }
 
-  static void skipAllAttributes(final DataInputStream inStream) throws IOException {
+  static void skipAllAttributesInStream(final DataInputStream inStream) throws IOException {
     int numberOfAttributes = inStream.readUnsignedShort();
     while (--numberOfAttributes >= 0) {
       // skip name
@@ -249,19 +329,50 @@ public final class JJJVMClass {
     }
   }
 
+  /**
+   * Normalize a class name from jvm formatted form to normal form.
+   *
+   * @param jvmFormattedClassName jvm formatted name to be normalized, must not
+   * be null
+   * @return normalized name, for instance "java/lang/Object" becomes
+   * "java.lang.Object"
+   */
   public static String normalizeClassName(final String jvmFormattedClassName) {
     return jvmFormattedClassName.replace('/', '.');
   }
 
-  public boolean canBeCastTo(final String jvmFormattedClassName) throws Throwable {
+  /**
+   * Check is it possoble or to to cast the class to class defined by its name.
+   *
+   * @param jvmFormattedClassName name of the target class, must not be null
+   * @return true if the class can be casted to the target class, false
+   * otherwise
+   * @throws Throwable it will be thrown for errors
+   */
+  public boolean tryCastTo(final String jvmFormattedClassName) throws Throwable {
+    final boolean result;
     if ("java/lang/Object".equals(jvmFormattedClassName)) {
-      return true;
+      result = true;
     }
-
-    return findClassForNameInHierarchy(this, jvmFormattedClassName) != null;
+    else {
+      result = findClassForNameInHierarchy(this, jvmFormattedClassName) != null;
+    }
+    return result;
   }
 
-  public static Object findClassForNameInHierarchy(final Class klazz, final String normalClassName) throws Throwable {
+  /**
+   * Make search among ancestors and interfaces of a class for a class defined
+   * by its normalized name
+   *
+   * @param klazz a class which ancestors will be used for search, it can be
+   * null
+   * @param normalClassName normalized class name of target class, must not be
+   * null
+   * @return object of found class or null if not found or the root class is
+   * null
+   * @throws Throwable it will be thrown for error
+   */
+  public static Class findClassForNameInHierarchy(final Class klazz, final String normalClassName) throws Throwable {
     if (klazz == null) {
       return null;
     }
@@ -273,7 +384,7 @@ public final class JJJVMClass {
       return klazz;
     }
     for (final Class interfaceClass : klazz.getInterfaces()) {
-      final Object obj = findClassForNameInHierarchy(interfaceClass, normalClassName);
+      final Class obj = findClassForNameInHierarchy(interfaceClass, normalClassName);
       if (obj != null) {
         return obj;
       }
@@ -281,30 +392,42 @@ public final class JJJVMClass {
     return findClassForNameInHierarchy(klazz.getSuperclass(), normalClassName);
   }
 
-  public static Object findClassForNameInHierarchy(final JJJVMClass klazz, final String jvmClassName) throws Throwable {
+  /**
+   * Make search among ancestors and interfaces of a JJJVMClass for a class defined
+   * by its jvm formatted name.
+   *
+   * @param klazz a class which ancestors will be used for search, it can be
+   * null
+   * @param jvmFormattedClassName  jvm formatted class name name of target class, must not be
+   * null
+   * @return object of found class or null if not found or the root class is
+   * null
+   * @throws Throwable it will be thrown for error
+   */
+  public static Object findClassForNameInHierarchy(final JJJVMClass klazz, final String jvmFormattedClassName) throws Throwable {
     if (klazz == null) {
       return false;
     }
-    if ("java/lang/Object".equals(jvmClassName)) {
+    if ("java/lang/Object".equals(jvmFormattedClassName)) {
       return java.lang.Object.class;
     }
-    if (jvmClassName.equals(klazz.getClassName())) {
+    if (jvmFormattedClassName.equals(klazz.getClassName())) {
       return klazz;
     }
 
-    final String normalizedName = normalizeClassName(jvmClassName);
+    final String normalizedName = normalizeClassName(jvmFormattedClassName);
 
     for (final String inter : klazz.getInterfaces()) {
-      if (inter.equals(jvmClassName)) {
+      if (inter.equals(jvmFormattedClassName)) {
         return true;
       }
-      final Object resolvedClass = klazz.provider.resolveClass(jvmClassName);
+      final Object resolvedClass = klazz.provider.resolveClass(jvmFormattedClassName);
       final Object detected;
       if (resolvedClass instanceof JJJVMClass) {
-        detected = findClassForNameInHierarchy((JJJVMClass) resolvedClass, jvmClassName);
+        detected = findClassForNameInHierarchy((JJJVMClass) resolvedClass, jvmFormattedClassName);
       }
       else {
-        detected = findClassForNameInHierarchy((Class) resolvedClass, jvmClassName);
+        detected = findClassForNameInHierarchy((Class) resolvedClass, jvmFormattedClassName);
       }
       if (detected != null) {
         return detected;
@@ -313,13 +436,19 @@ public final class JJJVMClass {
 
     final Object superKlazz = klazz.resolveSuperclass();
     if (superKlazz instanceof JJJVMClass) {
-      return findClassForNameInHierarchy((JJJVMClass) superKlazz, jvmClassName);
+      return findClassForNameInHierarchy((JJJVMClass) superKlazz, jvmFormattedClassName);
     }
     else {
       return findClassForNameInHierarchy((Class) superKlazz, normalizedName);
     }
   }
 
+  /**
+   * Find for field in the class and its ancestors.
+   * @param fieldName the fied name, must not be null
+   * @return found field object or null if the field has not been found
+   * @throws Throwable it will be thrown for errors
+   */
   public final JJJVMClassField findField(final String fieldName) throws Throwable {
     JJJVMClassField result = findDeclaredField(fieldName);
     if (result == null) {
@@ -331,10 +460,22 @@ public final class JJJVMClass {
     return result;
   }
 
+  /**
+   * Find for field defined only in the class.
+   * @param fieldName the fied name, must not be null
+   * @return found field object or null if the field has not been found
+   */
   public final JJJVMClassField findDeclaredField(final String fieldName) {
     return this.declaredFields.get(fieldName);
   }
 
+  /**
+   * Find for method defined by the class or in its ancestors.
+   * @param methodName the method name, must not be null
+   * @param methodSignature the method signature, must not be null
+   * @return found method object or null if not found
+   * @throws Throwable it will be thrown for errors
+   */
   public final JJJVMClassMethod findMethod(final String methodName, final String methodSignature) throws Throwable {
     JJJVMClassMethod result = findDeclaredMethod(methodName, methodSignature);
     if (result == null) {
@@ -346,10 +487,26 @@ public final class JJJVMClass {
     return result;
   }
 
+  /**
+   * Find for method declared only in the class.
+   * @param methodName the method name, must not be null
+   * @param methodSignature the method signature, must not be null
+   * @return found method  object or null if not found
+   */
   public final JJJVMClassMethod findDeclaredMethod(final String methodName, final String methodSignature) {
     return this.declaredMethods.get(makeMethodUID(methodName, methodSignature));
   }
 
+  /**
+   * Invoke a method.
+   * @param instance the 'this' object or null for static methods
+   * @param methodToInvoke the method to invoke, must not be null
+   * @param args array contains arguments for method, can be null for method without arguments
+   * @param stack predefined stack for the method, will be used only if the provided stack is enough for the method else recreated version will be used, it can be null
+   * @param vars predefined local variable area, it will be recreated if provided array is null or has not enough size
+   * @return result of invocation, null for void method
+   * @throws Throwable it will be thrown for errors
+   */
   public Object invoke(final JJJVMObject instance, final JJJVMClassMethod methodToInvoke, final Object[] args, final Object[] stack, final Object[] vars) throws Throwable {
     // implementation of synchronization mechanism
     final int methodFlags = methodToInvoke.getFlags();
@@ -378,6 +535,7 @@ public final class JJJVMClass {
     }
   }
 
+  // the Heart of the interpreter, it processes byte-code of method {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.3}
   private Object _invoke(final JJJVMObject instance, final JJJVMClassMethod method, final Object[] args, final int initialStackOffset, final Object[] stack, final Object[] vars) throws Throwable {
     final Object[] localVars = vars == null || vars.length < method.getMaxLocals() ? new Object[method.getMaxLocals()] : vars;
 
@@ -1709,7 +1867,7 @@ public final class JJJVMClass {
               }
               Object result = null;
               if (resolvedKlazz instanceof JJJVMClass) {
-                final JJJVMClassMethod foundMethod = ((JJJVMClass)resolvedKlazz).findMethod(methodName, signature);
+                final JJJVMClassMethod foundMethod = ((JJJVMClass) resolvedKlazz).findMethod(methodName, signature);
                 final JJJVMClass jjjvmclazz = foundMethod.getDeclaringClass();
                 if (jjjvmclazz == this) {
                   result = jjjvmclazz._invoke((JJJVMObject) objInstance, foundMethod, argsArray, regSP, localMethodStack, null);
@@ -2027,6 +2185,12 @@ public final class JJJVMClass {
     return (short) ((b0 << 8) | b1);
   }
 
+  /**
+   * Create new instance of the class.
+   * @param invokeDefaultConstructor true if to call the default constructor for the new instance, false if just allocated object
+   * @return new object of the class, must not be null
+   * @throws Throwable it will be thrown for errors
+   */
   public JJJVMObject newInstance(final boolean invokeDefaultConstructor) throws Throwable {
     final JJJVMObject result = new JJJVMObject(this);
     initFields(result);
@@ -2040,14 +2204,23 @@ public final class JJJVMClass {
     return result;
   }
 
-  public JJJVMObject newInstance(final String constructorSignature, final Object[] _arguments, final Object[] stack, final Object[] vars) throws Throwable {
+  /**
+   * Create new class instance and call defined constructor.
+   * @param constructorSignature the signature of the constructor to be called after memory allocation, must not be null
+   * @param args array of arguments for the constructor, can be null
+   * @param stack predefined stack for the call, can be null
+   * @param vars predefined local variable array, can be null
+   * @return new object instance of the class, must not be null
+   * @throws Throwable  it will be thrown for errors
+   */
+  public JJJVMObject newInstance(final String constructorSignature, final Object[] args, final Object[] stack, final Object[] vars) throws Throwable {
     final JJJVMClassMethod constructor = this.findMethod("<init>", constructorSignature);
     if (constructor == null) {
       throw new IllegalAccessException("Can't find the constructor [" + getClassName() + ' ' + constructorSignature + ']');
     }
     final JJJVMObject result = new JJJVMObject(this);
     initFields(result);
-    invoke(result, constructor, _arguments, stack, vars);
+    invoke(result, constructor, args, stack, vars);
     return result;
   }
 
