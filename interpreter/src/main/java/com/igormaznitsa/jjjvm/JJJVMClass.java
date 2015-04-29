@@ -393,13 +393,13 @@ public final class JJJVMClass {
   }
 
   /**
-   * Make search among ancestors and interfaces of a JJJVMClass for a class defined
-   * by its jvm formatted name.
+   * Make search among ancestors and interfaces of a JJJVMClass for a class
+   * defined by its jvm formatted name.
    *
    * @param klazz a class which ancestors will be used for search, it can be
    * null
-   * @param jvmFormattedClassName  jvm formatted class name name of target class, must not be
-   * null
+   * @param jvmFormattedClassName jvm formatted class name name of target class,
+   * must not be null
    * @return object of found class or null if not found or the root class is
    * null
    * @throws Throwable it will be thrown for error
@@ -445,6 +445,7 @@ public final class JJJVMClass {
 
   /**
    * Find for field in the class and its ancestors.
+   *
    * @param fieldName the fied name, must not be null
    * @return found field object or null if the field has not been found
    * @throws Throwable it will be thrown for errors
@@ -452,9 +453,21 @@ public final class JJJVMClass {
   public final JJJVMClassField findField(final String fieldName) throws Throwable {
     JJJVMClassField result = findDeclaredField(fieldName);
     if (result == null) {
-      final Object resolvedClass = this.resolveSuperclass();
-      if (resolvedClass != null && resolvedClass instanceof JJJVMClass) {
-        result = ((JJJVMClass) resolvedClass).findField(fieldName);
+      for (final String inter : this.implementedInterfaces) {
+        final Object resolvedClass = this.provider.resolveClass(inter);
+        if (resolvedClass != null && resolvedClass instanceof JJJVMClass) {
+          result = ((JJJVMClass) resolvedClass).findField(fieldName);
+          if (result != null) {
+            break;
+          }
+        }
+      }
+
+      if (result == null) {
+        final Object resolvedClass = this.resolveSuperclass();
+        if (resolvedClass != null && resolvedClass instanceof JJJVMClass) {
+          result = ((JJJVMClass) resolvedClass).findField(fieldName);
+        }
       }
     }
     return result;
@@ -462,6 +475,7 @@ public final class JJJVMClass {
 
   /**
    * Find for field defined only in the class.
+   *
    * @param fieldName the fied name, must not be null
    * @return found field object or null if the field has not been found
    */
@@ -471,6 +485,7 @@ public final class JJJVMClass {
 
   /**
    * Find for method defined by the class or in its ancestors.
+   *
    * @param methodName the method name, must not be null
    * @param methodSignature the method signature, must not be null
    * @return found method object or null if not found
@@ -489,9 +504,10 @@ public final class JJJVMClass {
 
   /**
    * Find for method declared only in the class.
+   *
    * @param methodName the method name, must not be null
    * @param methodSignature the method signature, must not be null
-   * @return found method  object or null if not found
+   * @return found method object or null if not found
    */
   public final JJJVMClassMethod findDeclaredMethod(final String methodName, final String methodSignature) {
     return this.declaredMethods.get(makeMethodUID(methodName, methodSignature));
@@ -499,11 +515,16 @@ public final class JJJVMClass {
 
   /**
    * Invoke a method.
+   *
    * @param instance the 'this' object or null for static methods
    * @param methodToInvoke the method to invoke, must not be null
-   * @param args array contains arguments for method, can be null for method without arguments
-   * @param stack predefined stack for the method, will be used only if the provided stack is enough for the method else recreated version will be used, it can be null
-   * @param vars predefined local variable area, it will be recreated if provided array is null or has not enough size
+   * @param args array contains arguments for method, can be null for method
+   * without arguments
+   * @param stack predefined stack for the method, will be used only if the
+   * provided stack is enough for the method else recreated version will be
+   * used, it can be null
+   * @param vars predefined local variable area, it will be recreated if
+   * provided array is null or has not enough size
    * @return result of invocation, null for void method
    * @throws Throwable it will be thrown for errors
    */
@@ -2187,7 +2208,9 @@ public final class JJJVMClass {
 
   /**
    * Create new instance of the class.
-   * @param invokeDefaultConstructor true if to call the default constructor for the new instance, false if just allocated object
+   *
+   * @param invokeDefaultConstructor true if to call the default constructor for
+   * the new instance, false if just allocated object
    * @return new object of the class, must not be null
    * @throws Throwable it will be thrown for errors
    */
@@ -2206,12 +2229,14 @@ public final class JJJVMClass {
 
   /**
    * Create new class instance and call defined constructor.
-   * @param constructorSignature the signature of the constructor to be called after memory allocation, must not be null
+   *
+   * @param constructorSignature the signature of the constructor to be called
+   * after memory allocation, must not be null
    * @param args array of arguments for the constructor, can be null
    * @param stack predefined stack for the call, can be null
    * @param vars predefined local variable array, can be null
    * @return new object instance of the class, must not be null
-   * @throws Throwable  it will be thrown for errors
+   * @throws Throwable it will be thrown for errors
    */
   public JJJVMObject newInstance(final String constructorSignature, final Object[] args, final Object[] stack, final Object[] vars) throws Throwable {
     final JJJVMClassMethod constructor = this.findMethod("<init>", constructorSignature);
@@ -2269,6 +2294,37 @@ public final class JJJVMClass {
         classInstance.set(theField.getName(), fieldValue, false);
       }
     }
+  }
+
+  /**
+   * Read value of a class static field.
+   * @param fieldName the field name, must not be null
+   * @return the value from the static field
+   * @throws NoSuchFieldException if the field is not found
+   * @throws Throwable it will be thrown for inside errors
+   */
+  public Object readStaticField(final String fieldName) throws Throwable {
+    final JJJVMClassField field = this.findField(fieldName);
+    if (field == null) {
+      throw new NoSuchFieldException(fieldName);
+    }
+    return field.getStaticValue();
+  }
+
+  /**
+   * Write value into a class static field.
+   * @param fieldName the field name, must not be null
+   * @param value value to be written into the field
+   * @throws NoSuchFieldException if the field is not found
+   * @throws IllegalStateException if the field is final
+   * @throws Throwable it will be thrown for inside errors
+   */
+  public void writeStaticField(final String fieldName, final Object value) throws Throwable {
+    final JJJVMClassField field = this.findField(fieldName);
+    if (field == null) {
+      throw new NoSuchFieldException(fieldName);
+    }
+    field.setStaticValue(value);
   }
 
   Map<String, JJJVMClassField> getDeclaredFields() {

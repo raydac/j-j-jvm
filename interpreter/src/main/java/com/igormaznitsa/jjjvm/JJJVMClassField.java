@@ -23,6 +23,7 @@ import java.io.IOException;
  * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.5}
  */
 public final class JJJVMClassField {
+
   public static final int ACC_PUBLIC = 0x0001;
   public static final int ACC_PRIVATE = 0x0002;
   public static final int ACC_PROTECTED = 0x0004;
@@ -40,21 +41,46 @@ public final class JJJVMClassField {
   private final int flags;
   private final String name;
   private final String signature;
-  private final int constantValue;
+  private final int constantIndexInPool;
   private final int fieldUID;
   private Object staticValue;
 
+  /**
+   * Write static value in the field.
+   * @param value object to be saved
+   * @throws IllegalStateException if the field is either non static or is final
+   */
   public void setStaticValue(final Object value) {
-    this.staticValue = value;
+    if ((this.flags & ACC_STATIC) == 0) {
+      throw new IllegalStateException("Field '" + this.name + "' is not static");
+    }
+    else {
+      if ((this.flags & ACC_FINAL) == 0) {
+        this.staticValue = value;
+      }
+      else {
+        throw new IllegalStateException("Field '" + this.name + "' is final");
+      }
+    }
   }
 
+  /**
+   * Read static value from the field
+   * @return object from the field
+   * @throws IllegalStateException if the field is non static
+   */
   public Object getStaticValue() {
-    return this.staticValue;
+    if ((this.flags & ACC_STATIC) == 0) {
+      throw new IllegalStateException("Field '" + this.name + "' is not static");
+    }
+    else {
+      return this.staticValue;
+    }
   }
 
   JJJVMClassField(final JJJVMClass declaringClass, final DataInputStream inStream) throws IOException {
     this.declaringClass = declaringClass;
-    int theConstantValue = -1;
+    int theConstantValueIndex = -1;
     this.staticValue = null;
     // flags
     this.flags = inStream.readUnsignedShort();
@@ -74,7 +100,7 @@ public final class JJJVMClassField {
         if (attributeSize != 2) {
           throw new IOException("Wrong size for constant value attribute [" + attributeSize + ']');
         }
-        theConstantValue = inStream.readUnsignedShort();
+        theConstantValueIndex = inStream.readUnsignedShort();
       }
       else {
         // ignore all other attributes
@@ -82,7 +108,10 @@ public final class JJJVMClassField {
       }
     }
 
-    this.constantValue = theConstantValue;
+    this.constantIndexInPool = theConstantValueIndex;
+    if ((this.flags & ACC_STATIC) != 0 && theConstantValueIndex>=0) {
+      this.staticValue = this.getConstantValue();
+    }
   }
 
   public int getUID() {
@@ -91,7 +120,7 @@ public final class JJJVMClassField {
 
   public Object get(final JJJVMObject instance) {
     if ((flags & ACC_STATIC) == 0) {
-      return instance.get(this.name,true);
+      return instance.get(this.name, true);
     }
     else {
       return this.staticValue;
@@ -108,10 +137,10 @@ public final class JJJVMClassField {
   }
 
   public Object getConstantValue() {
-    if (this.constantValue < 0) {
+    if (this.constantIndexInPool <= 0) {
       return null;
     }
-    return this.declaringClass.getConstantPool().get(this.constantValue).asObject();
+    return this.declaringClass.getConstantPool().get(this.constantIndexInPool).asObject();
   }
 
   public int getFlags() {

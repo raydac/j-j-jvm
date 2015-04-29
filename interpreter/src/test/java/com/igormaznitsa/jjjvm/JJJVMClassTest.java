@@ -11,12 +11,13 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassLoader {
-  public byte[] loadClass(String className) throws IOException, ClassNotFoundException {
+  public byte[] loadClassBody(String jvmFormattedClassName) throws IOException {
+    if (!jvmFormattedClassName.startsWith("com/igormaznitsa/jjjvm/testclasses")) return null;
     try {
-      return TestHelper.loadClassBodyFromClassPath(className);
+      return TestHelper.loadClassBodyFromClassPath(jvmFormattedClassName);
     }
     catch (ClassNotFoundException ex) {
-      throw ex;
+      return null;
     }
     catch (Throwable thr) {
       throw new IOException("Error", thr);
@@ -1467,6 +1468,8 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     obj.set("field1", 123, true);
     obj.set("field2", 345, true);
     obj.set("field3", 678, true);
+    
+    assertEquals(123.456d, ((Double)testKlazz.readStaticField("dblStatField")).doubleValue(), 0.0d);
     
     assertEquals(Integer.valueOf(123),obj.get("field1", true));
     assertEquals(Integer.valueOf(345),obj.get("field2", true));

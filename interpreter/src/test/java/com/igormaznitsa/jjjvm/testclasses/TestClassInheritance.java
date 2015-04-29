@@ -1,7 +1,11 @@
 package com.igormaznitsa.jjjvm.testclasses;
 
 public class TestClassInheritance {
-  public static abstract class Klazz1{
+  public interface SomeInterface {
+    public static final double dblStatField = 123.456d;
+  }
+  
+  public static abstract class Klazz1 implements SomeInterface{
     public int field1;
     public int method1(int a){
       return a * field1;

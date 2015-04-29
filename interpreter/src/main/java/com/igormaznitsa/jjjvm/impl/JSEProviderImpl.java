@@ -55,11 +55,10 @@ public class JSEProviderImpl implements JJJVMProvider {
      *
      * @param jvmFormattedClassName the JVM formatted class name, must not be
      * null.
-     * @return byte-code of the class, must not be null
+     * @return byte-code of the class, or null if class not found
      * @throws IOException it must be throws for transport error
-     * @throws ClassNotFoundException it must be thrown if class not found
      */
-    byte[] loadClass(String jvmFormattedClassName) throws IOException, ClassNotFoundException;
+    byte[] loadClassBody(String jvmFormattedClassName) throws IOException;
   }
 
   private final ClassLoader classBodyProvider;
@@ -68,24 +67,35 @@ public class JSEProviderImpl implements JJJVMProvider {
     this.classBodyProvider = classLoader;
   }
 
+  private JJJVMClass loadClassFromLoader(final String jvmFormattedClassName) throws Throwable {
+    final byte[] classBody = this.classBodyProvider.loadClassBody(jvmFormattedClassName);
+    if (classBody == null) {
+      throw new ClassNotFoundException("Can't find body for class '" + jvmFormattedClassName + '\'');
+    }
+    return new JJJVMClass(new ByteArrayInputStream(classBody), this);
+  }
+  
   public JJJVMClass resolveInnerClass(final JJJVMClass caller, final JJJVMInnerClassRecord innerClassRecord) throws Throwable {
     final String outerClassName = innerClassRecord.getOuterClassInfo() == null ? null : innerClassRecord.getOuterClassInfo().getClassName();
     final String innerClassName = innerClassRecord.getInnerClassInfo().getClassName();
 
-    final JJJVMClass result;
-
+    JJJVMClass result;
+    
     synchronized (this.classCache) {
-      if (outerClassName != null && !this.classCache.containsKey(outerClassName) && !JJJVMClass.isClassLoading(outerClassName)) {
-        final JJJVMClass outerClass = new JJJVMClass(new ByteArrayInputStream(this.classBodyProvider.loadClass(outerClassName)), this);
-        this.classCache.put(outerClassName, outerClass);
-        result = (JJJVMClass) this.classCache.get(innerClassName);
-        if (result == null) {
-          throw new Error("Unexpectedstate, inner class [" + innerClassName + "] is not loaded");
+      result = (JJJVMClass) this.classCache.get(innerClassName);
+      if (result == null) {
+        if (outerClassName != null && !this.classCache.containsKey(outerClassName) && !JJJVMClass.isClassLoading(outerClassName)) {
+          final JJJVMClass outerClass = loadClassFromLoader(outerClassName);
+          this.classCache.put(outerClassName, outerClass);
+          result = (JJJVMClass) this.classCache.get(innerClassName);
+          if (result == null) {
+            throw new Error("Unexpectedstate, inner class [" + innerClassName + "] is not loaded");
+          }
         }
-      }
-      else {
-        result = new JJJVMClass(new ByteArrayInputStream(this.classBodyProvider.loadClass(innerClassName)), this);
-        this.classCache.put(innerClassName, result);
+        else {
+          result = loadClassFromLoader(innerClassName);
+          this.classCache.put(innerClassName, result);
+        }
       }
     }
     return result;
@@ -107,20 +117,19 @@ public class JSEProviderImpl implements JJJVMProvider {
   }
 
   public Object resolveClass(final String jvmFormattedClassName) throws Throwable {
-    Object clazz = null;
+    Object result;
     synchronized (this.classCache) {
-      clazz = this.classCache.get(jvmFormattedClassName);
-      if (clazz == null) {
-        try {
-          clazz = Class.forName(jvmFormattedClassName.replace('/', '.'));
+      result = this.classCache.get(jvmFormattedClassName);
+      if (result == null) {
+        try{
+          result = loadClassFromLoader(jvmFormattedClassName);
+        }catch(ClassNotFoundException ex){
+          result = Class.forName(jvmFormattedClassName.replace('/', '.'));
         }
-        catch (ClassNotFoundException ex) {
-          clazz = new JJJVMClass(new ByteArrayInputStream(this.classBodyProvider.loadClass(jvmFormattedClassName)), this);
-        }
-        this.classCache.put(jvmFormattedClassName, clazz);
+        this.classCache.put(jvmFormattedClassName, result);
       }
     }
-    return clazz;
+    return result;
   }
 
   public Object allocate(final JJJVMClass caller, final String jvmFormattedClassName) throws Throwable {
@@ -365,9 +374,10 @@ public class JSEProviderImpl implements JJJVMProvider {
   }
 
   public void doThrow(final JJJVMClass caller, final Object objectProvidedAsThrowable) throws Throwable {
-    if (objectProvidedAsThrowable instanceof Throwable){
-      throw (Throwable)objectProvidedAsThrowable;
-    }else{
+    if (objectProvidedAsThrowable instanceof Throwable) {
+      throw (Throwable) objectProvidedAsThrowable;
+    }
+    else {
       throw new Throwable(objectProvidedAsThrowable.toString());
     }
   }
