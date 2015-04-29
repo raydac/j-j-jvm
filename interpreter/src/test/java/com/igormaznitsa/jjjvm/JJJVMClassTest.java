@@ -1480,10 +1480,11 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     final JJJVMClass test = prepareTestClass(new JSEProviderImpl(this), 
             "public java.lang.Object test(java.lang.Object a){"
             + " int [][] array = new int[2][10];"
+            + " int index = 0;"
             + " for(int x=0; x<array.length; x++){"
             + "  int [] fill = array[x];"
             + "  for(int y=0; y< fill.length; y++){"
-            + "    fill[y] = y;"
+            + "    fill[y] = index++;"
             + "  }"
             + " }"
             + " return array;"
@@ -1493,7 +1494,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     final int[][] result = (int[][]) executeTestMethod(test, Object.class, null, null);
     assertEquals(2, result.length);
     assertArrayEquals(new int[]{0,1,2,3,4,5,6,7,8,9}, result[0]);
-    assertArrayEquals(new int[]{0,1,2,3,4,5,6,7,8,9}, result[1]);
+    assertArrayEquals(new int[]{10,11,12,13,14,15,16,17,18,19}, result[1]);
   }
 
 }
