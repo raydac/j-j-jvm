@@ -21,7 +21,7 @@ import com.igormaznitsa.jjjvm.model.JJJVMProvider;
 import com.igormaznitsa.jjjvm.model.JJJVMObject;
 import com.igormaznitsa.jjjvm.model.JJJVMCPRecord;
 import com.igormaznitsa.jjjvm.model.JJJVMMethod;
-import com.igormaznitsa.jjjvm.model.JJJVMCatchBlockDescriptor;
+import com.igormaznitsa.jjjvm.model.JJJVMTryCatchRecord;
 import com.igormaznitsa.jjjvm.model.JJJVMField;
 import com.igormaznitsa.jjjvm.model.*;
 import java.lang.reflect.Array;
@@ -1635,9 +1635,9 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
         }
       }
       catch (Throwable thr) {
-        JJJVMCatchBlockDescriptor record = null;
+        JJJVMTryCatchRecord record = null;
 
-        for (final JJJVMCatchBlockDescriptor r : method.getCatchBlockDescriptors()) {
+        for (final JJJVMTryCatchRecord r : method.getTryCatchRecords()) {
           if (r.isActiveForAddress(lastPC)) {
             final String exceptionClassName = r.getJvmFormattedClassName();
             if (exceptionClassName == null) {

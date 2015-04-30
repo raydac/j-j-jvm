@@ -21,10 +21,6 @@ import com.igormaznitsa.jjjvm.model.JJJVMCPRecord;
 import java.io.DataInputStream;
 import java.io.IOException;
 
-/**
- * Container of class constant pool.
- * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4}
- */
 public class JJJVMConstantPoolImpl implements JJJVMConstantPool {
 
   private final JJJVMCPRecord[] records;

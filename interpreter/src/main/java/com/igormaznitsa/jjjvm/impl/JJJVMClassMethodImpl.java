@@ -18,15 +18,11 @@ package com.igormaznitsa.jjjvm.impl;
 import com.igormaznitsa.jjjvm.model.JJJVMClass;
 import com.igormaznitsa.jjjvm.model.JJJVMObject;
 import com.igormaznitsa.jjjvm.model.JJJVMMethod;
-import com.igormaznitsa.jjjvm.model.JJJVMCatchBlockDescriptor;
+import com.igormaznitsa.jjjvm.model.JJJVMTryCatchRecord;
 import com.igormaznitsa.jjjvm.*;
 import java.io.DataInputStream;
 import java.io.IOException;
 
-/**
- * Class contains class method info.
- * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.6}
- */
 public final class JJJVMClassMethodImpl implements JJJVMMethod {
 
   private final JJJVMClass declaringClass;
@@ -34,7 +30,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
   private final String name;
   private final String signature;
   private final String[] declaredExceptions;
-  private final JJJVMCatchBlockDescriptor[] catchBlocks;
+  private final JJJVMTryCatchRecord[] catchBlocks;
   private final int maxStackDepth;
   private final int maxLocals;
   private final byte[] bytecode;
@@ -55,7 +51,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
     int lmaxStackDepth = -1;
     int lmaxLocalVars = -1;
     byte[] lbytecode = null;
-    JJJVMCatchBlockDescriptor[] lcatchBlocks = null;
+    JJJVMTryCatchRecord[] lcatchBlocks = null;
 
     while (--numberOfAttrs >= 0) {
       final String attrName = cpool.getItemAt(inStream.readUnsignedShort()).asString();
@@ -78,9 +74,9 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
           inStream.readFully(lbytecode);
           // read the table of exception processors for the bytecode
           final int catchBlockNumber = inStream.readUnsignedShort();
-          lcatchBlocks = catchBlockNumber == 0 ? EMPTY_CATCBLOCK_ARRAY : new JJJVMCatchBlockDescriptor[catchBlockNumber];
+          lcatchBlocks = catchBlockNumber == 0 ? EMPTY_CATCBLOCK_ARRAY : new JJJVMTryCatchRecord[catchBlockNumber];
           for (int li = 0; li < lcatchBlocks.length; li++) {
-            lcatchBlocks[li] = new JJJVMCatchBlockDescriptor(cpool, inStream);
+            lcatchBlocks[li] = new JJJVMTryCatchRecord(cpool, inStream);
           }
           // skip all other attributes in the code attribute
           JJJVMClassImpl.skipAllAttributesInStream(inStream);
@@ -96,7 +92,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
       declExceptions = new String[0];
     }
     if (lcatchBlocks == null) {
-      lcatchBlocks = new JJJVMCatchBlockDescriptor[0];
+      lcatchBlocks = new JJJVMTryCatchRecord[0];
     }
 
     this.declaredExceptions = declExceptions;
@@ -111,6 +107,9 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
   }
 
   public Object invoke(final JJJVMObject instance, final Object[] arguments) throws Throwable {
+    if ((this.flags & ACC_STATIC) == 0 && instance == null){
+      throw new NullPointerException("'this' can't be null for non-static method");
+    }
     return JJJVMInterpreter.invoke(this.declaringClass, instance, this, arguments, null, null);
   }
 
@@ -118,7 +117,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
     return this.declaringClass;
   }
 
-  public JJJVMCatchBlockDescriptor[] getCatchBlockDescriptors() {
+  public JJJVMTryCatchRecord[] getTryCatchRecords() {
     return this.catchBlocks;
   }
 

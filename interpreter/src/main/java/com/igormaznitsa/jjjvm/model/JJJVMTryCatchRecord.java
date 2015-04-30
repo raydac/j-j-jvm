@@ -22,7 +22,7 @@ import java.io.IOException;
  * Record contains data about try..catch block.
  * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.5}
  */
-public class JJJVMCatchBlockDescriptor {
+public class JJJVMTryCatchRecord {
   protected final int pcStart;
   protected final int pcEnd;
   protected final int codeAddress;
@@ -48,14 +48,14 @@ public class JJJVMCatchBlockDescriptor {
     return pcReg >= this.pcStart && pcReg <= this.pcEnd;
   }
 
-  public JJJVMCatchBlockDescriptor(final int pcStart, final int pcEnd, final int pcAddress,final String jvmFormattedClassName){
+  public JJJVMTryCatchRecord(final int pcStart, final int pcEnd, final int pcAddress,final String jvmFormattedClassName){
     this.jvmFormattedClassName = jvmFormattedClassName;
     this.pcStart = pcStart;
     this.pcEnd = pcEnd;
     this.codeAddress = pcAddress;
   }
   
-  public JJJVMCatchBlockDescriptor(final JJJVMConstantPool constantPool, final DataInputStream inStream) throws IOException {
+  public JJJVMTryCatchRecord(final JJJVMConstantPool constantPool, final DataInputStream inStream) throws IOException {
     this(inStream.readUnsignedShort(), inStream.readUnsignedShort(), inStream.readUnsignedShort(), constantPool.getItemAt(inStream.readUnsignedShort()).asString());
   }
   
