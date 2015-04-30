@@ -1,5 +1,11 @@
-package com.igormaznitsa.jjjvm;
+package com.igormaznitsa.jjjvm.utils;
 
+import com.igormaznitsa.jjjvm.JJJVMInterpreter;
+import com.igormaznitsa.jjjvm.utils.Branch;
+import com.igormaznitsa.jjjvm.model.JJJVMMethod;
+import com.igormaznitsa.jjjvm.model.JJJVMClass;
+import com.igormaznitsa.jjjvm.model.JJJVMProvider;
+import com.igormaznitsa.jjjvm.model.JJJVMObject;
 import com.igormaznitsa.jjjvm.impl.JJJVMClassImpl;
 import java.io.*;
 import javassist.*;
@@ -55,7 +61,7 @@ public abstract class TestHelper {
     return result;
   }
 
-  protected static JJJVMKlazz loadClassFromClassPath(final JJJVMProvider provider, final String className) throws Throwable {
+  protected static JJJVMClass loadClassFromClassPath(final JJJVMProvider provider, final String className) throws Throwable {
     return new JJJVMClassImpl(new ByteArrayInputStream(loadClassBodyFromClassPath(className)), provider);
   }
   
@@ -129,7 +135,7 @@ public abstract class TestHelper {
     return new JJJVMClassImpl(new ByteArrayInputStream(buffer.toByteArray()), processor);
   }
 
-  protected <K> K executeTestMethod(final JJJVMKlazz clazz, final Class<K> type, final Object[] stack, final Object... args) throws Throwable {
+  protected <K> K executeTestMethod(final JJJVMClass clazz, final Class<K> type, final Object[] stack, final Object... args) throws Throwable {
     final JJJVMObject obj = clazz.newInstance(true);
 
     final Type bceltype;

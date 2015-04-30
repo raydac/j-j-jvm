@@ -15,7 +15,9 @@
  */
 package com.igormaznitsa.jjjvm.impl;
 
-import com.igormaznitsa.jjjvm.*;
+import com.igormaznitsa.jjjvm.model.JJJVMClass;
+import com.igormaznitsa.jjjvm.model.JJJVMConstantPool;
+import com.igormaznitsa.jjjvm.model.JJJVMCPRecord;
 import java.io.DataInputStream;
 import java.io.IOException;
 
@@ -26,9 +28,9 @@ import java.io.IOException;
 public class JJJVMConstantPoolImpl implements JJJVMConstantPool {
 
   private final JJJVMCPRecord[] records;
-  private final JJJVMKlazz klazz;
+  private final JJJVMClass klazz;
 
-  public JJJVMConstantPoolImpl(final JJJVMKlazz klazz, final DataInputStream inStream) throws IOException {
+  public JJJVMConstantPoolImpl(final JJJVMClass klazz, final DataInputStream inStream) throws IOException {
     int index = 0;
 
     this.klazz = klazz;
@@ -112,11 +114,11 @@ public class JJJVMConstantPoolImpl implements JJJVMConstantPool {
     }
   }
 
-  public JJJVMKlazz getDeclaringClass() {
+  public JJJVMClass getDeclaringClass() {
     return this.klazz;
   }
 
-  public JJJVMCPRecord getItem(final int index) {
+  public JJJVMCPRecord getItemAt(final int index) {
     return this.records[index];
   }
 

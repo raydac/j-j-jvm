@@ -1,4 +1,4 @@
-package com.igormaznitsa.jjjvm;
+package com.igormaznitsa.jjjvm.testclasses;
 
 public class TestObject {
   public static int sfield;

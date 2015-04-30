@@ -15,11 +15,17 @@
  */
 package com.igormaznitsa.jjjvm.impl;
 
-import com.igormaznitsa.JJJVMField;
+import com.igormaznitsa.jjjvm.model.JJJVMClass;
+import com.igormaznitsa.jjjvm.model.JJJVMObject;
+import com.igormaznitsa.jjjvm.model.JJJVMProvider;
+import com.igormaznitsa.jjjvm.model.JJJVMMethod;
+import com.igormaznitsa.jjjvm.model.JJJVMInnerClassRecord;
+import com.igormaznitsa.jjjvm.model.JJJVMField;
 import com.igormaznitsa.jjjvm.*;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,23 +40,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see JJJVMClassFieldImpl
  * @see JJJVMObject
  */
-public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz {
+public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass {
 
-  //-----------------------------
-  public static final int ACC_PUBLIC = 0x0001;
-  public static final int ACC_FINAL = 0x0010;
-  public static final int ACC_SUPER = 0x0020;
-  public static final int ACC_INTERFACE = 0x0200;
-  public static final int ACC_ABSTRACT = 0x0400;
-  public static final int ACC_SYNTHETIC = 0x1000;
-  public static final int ACC_ANNOTATION = 0x2000;
-  public static final int ACC_ENUM = 0x4000;
-  //-----------------------------
-  private static final String ATTR_INNERCLASSES = "InnerClasses";
-  private static final String ATTR_SOURCEFILE = "SourceFile";
-  //-----------------------------
   private final int classFileFormatVersion;
-  private final int classAccessFlags;
+  private final int flags;
   private final int classNameIndex;
   private final int superClassNameIndex;
   private final String[] implementedInterfaces;
@@ -66,7 +59,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
   // constructor for test purposes
   public JJJVMClassImpl() {
     this.classFileFormatVersion = 0;
-    this.classAccessFlags = 0;
+    this.flags = 0;
     this.classNameIndex = 0;
     this.superClassNameIndex = 0;
     this.implementedInterfaces = null;
@@ -74,80 +67,80 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
     this.constantPool = null;
     this.declaredMethods = null;
     this.declaredFields = null;
-    this.innerClasses = null;
+    this.innerClasses = EMPTY_INNERCLASS_ARRAY;
     this.sourceFile = null;
   }
 
   /**
    * It parses and create instance of class which represented by input stream.
    *
-   * @param inStream stream contains array describing a compiled java class,
+   * @param in stream contains array describing a compiled java class,
    * must not be null
    * @param provider a provider which implements misc service methods to process
    * byte code and resolve classes, must not be null
    * @throws Throwable it will be thrown for errors
    */
-  public JJJVMClassImpl(final InputStream inStream, final JJJVMProvider provider) throws Throwable {
+  public JJJVMClassImpl(final InputStream in, final JJJVMProvider provider) throws Throwable {
     if (provider == null) {
       throw new NullPointerException("External processor must be provided");
     }
-    if (inStream == null) {
+    if (in == null) {
       throw new NullPointerException("Input stream must be provided");
     }
 
     this.provider = provider;
 
-    final DataInputStream readStr = inStream instanceof DataInputStream ? (DataInputStream) inStream : new DataInputStream(inStream);
+    final DataInputStream inStream = in instanceof DataInputStream ? (DataInputStream) in : new DataInputStream(in);
 
-    if (readStr.readInt() != 0xCAFEBABE) {
+    if (inStream.readInt() != 0xCAFEBABE) {
       throw new IOException("Not Java class");
     }
-    this.classFileFormatVersion = readStr.readInt();
-    this.constantPool = new JJJVMConstantPoolImpl(this, readStr);
-    this.classAccessFlags = readStr.readUnsignedShort();
-    this.classNameIndex = readStr.readUnsignedShort();
+    this.classFileFormatVersion = inStream.readInt();
+    this.constantPool = new JJJVMConstantPoolImpl(this, inStream);
+    this.flags = inStream.readUnsignedShort();
+    this.classNameIndex = inStream.readUnsignedShort();
 
     loadingClasses.put(this.getClassName(), this.getClassName());
 
     try {
-      this.superClassNameIndex = readStr.readUnsignedShort();
-      final int numberOfInterfaces = readStr.readUnsignedShort();
-      this.implementedInterfaces = new String[numberOfInterfaces];
+      this.superClassNameIndex = inStream.readUnsignedShort();
+      final int numberOfInterfaces = inStream.readUnsignedShort();
+      this.implementedInterfaces = numberOfInterfaces == 0 ? EMPTY_STRING_ARRAY : new String[numberOfInterfaces];
       for (int i = 0; i < numberOfInterfaces; i++) {
-        final String interfaceClassName = this.constantPool.getItem(readStr.readUnsignedShort()).asString();
+        final String interfaceClassName = this.constantPool.getItemAt(inStream.readUnsignedShort()).asString();
         this.implementedInterfaces[i] = interfaceClassName;
         this.provider.resolveClass(interfaceClassName);
       }
-      this.declaredFields = loadFields(readStr);
-      this.declaredMethods = loadMethods(readStr);
+      this.declaredFields = loadFields(inStream);
+      this.declaredMethods = loadMethods(inStream);
 
       JJJVMInnerClassRecord[] detectedInnerClassess = null;
       String sourceFileName = null;
-      int classAttributeNumber = readStr.readUnsignedShort();
+      int classAttributeNumber = inStream.readUnsignedShort();
       while (--classAttributeNumber >= 0) {
-        final int nameIndex = readStr.readUnsignedShort();
-        final int dataSize = readStr.readInt();
-        final String attrName = this.constantPool.getItem(nameIndex).asString();
-        if (ATTR_INNERCLASSES.equals(attrName)) {
-          detectedInnerClassess = readInnerClasses(readStr);
+        final int nameIndex = inStream.readUnsignedShort();
+        final int dataSize = inStream.readInt();
+        final String attrName = this.constantPool.getItemAt(nameIndex).asString();
+        if (ATTRNAME_INNERCLASSES.equals(attrName)) {
+          detectedInnerClassess = readInnerClasses(inStream);
         }
-        else if (ATTR_SOURCEFILE.equals(attrName)) {
-          sourceFileName = this.constantPool.getItem(readStr.readUnsignedShort()).asString();
+        else if (ATTRNAME_SOURCEFILE.equals(attrName)) {
+          sourceFileName = this.constantPool.getItemAt(inStream.readUnsignedShort()).asString();
         }
         else {
-          readStr.skipBytes(dataSize);
+          JJJVMImplUtils.skip(inStream, dataSize);
         }
       }
       this.sourceFile = sourceFileName;
-      this.innerClasses = detectedInnerClassess == null ? new JJJVMInnerClassRecord[0] : detectedInnerClassess;
+      this.innerClasses = detectedInnerClassess == null ? EMPTY_INNERCLASS_ARRAY : detectedInnerClassess;
 
       final JJJVMMethod clinitMethod = findMethod("<clinit>", "()V");
-      if (clinitMethod != null) {
+      if (clinitMethod != null && (clinitMethod.getFlags() & ACC_NATIVE) == 0) {
         try {
-          invoke(this, null, clinitMethod, null, null, null);
+          clinitMethod.invoke(null, null);
         }
         catch (Throwable thr) {
-          throw new IOException("Error during <clinit>");
+          throw new InvocationTargetException(thr, "Error during <clinit> [" + clinitMethod.getDeclaringClass().getName() + ']');
         }
       }
 
@@ -158,17 +151,17 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
     }
   }
 
-  public JJJVMProvider getProvider(){
+  public JJJVMProvider getProvider() {
     return this.provider;
   }
-  
+
   /**
    * Get the source file name for the class.
    * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.10}
    *
    * @return the found source name or null if there was not any definition.
    */
-  public String getSourceFile() {
+  public String getSourceFileName() {
     return this.sourceFile;
   }
 
@@ -225,7 +218,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
    * errors
    */
   public Object resolveSuperclass() throws Throwable {
-    return this.provider.resolveClass(this.constantPool.getItem(this.superClassNameIndex).asString());
+    return this.provider.resolveClass(this.constantPool.getItemAt(this.superClassNameIndex).asString());
   }
 
   /**
@@ -235,8 +228,12 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
    *
    * @return array contains names of interfaces, must not be null
    */
-  public String[] getInterfaces() {
+  public String[] getImplementedInterfaceNames() {
     return this.implementedInterfaces;
+  }
+
+  public int getFlags() {
+    return this.flags;
   }
 
   /**
@@ -245,7 +242,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
    * @return class name in jvm format like "java/lang/Object$1"
    */
   public String getClassName() {
-    return this.constantPool.getItem(this.classNameIndex).asString();
+    return this.constantPool.getItemAt(this.classNameIndex).asString();
   }
 
   /**
@@ -314,9 +311,9 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
     int numberOfAttributes = inStream.readUnsignedShort();
     while (--numberOfAttributes >= 0) {
       // skip name
-      inStream.skipBytes(2);
+      JJJVMImplUtils.skip(inStream, 2);
       //skip data
-      inStream.skipBytes(inStream.readInt());
+      JJJVMImplUtils.skip(inStream, inStream.readInt());
     }
   }
 
@@ -344,8 +341,8 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
     if (result == null) {
       for (final String inter : this.implementedInterfaces) {
         final Object resolvedClass = this.provider.resolveClass(inter);
-        if (resolvedClass != null && resolvedClass instanceof JJJVMClassImpl) {
-          result = ((JJJVMClassImpl) resolvedClass).findField(fieldName);
+        if (resolvedClass != null && resolvedClass instanceof JJJVMClass) {
+          result = ((JJJVMClass) resolvedClass).findField(fieldName);
           if (result != null) {
             break;
           }
@@ -354,8 +351,8 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
 
       if (result == null) {
         final Object resolvedClass = this.resolveSuperclass();
-        if (resolvedClass != null && resolvedClass instanceof JJJVMClassImpl) {
-          result = ((JJJVMClassImpl) resolvedClass).findField(fieldName);
+        if (resolvedClass != null && resolvedClass instanceof JJJVMClass) {
+          result = ((JJJVMClass) resolvedClass).findField(fieldName);
         }
       }
     }
@@ -384,8 +381,8 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
     JJJVMMethod result = findDeclaredMethod(methodName, methodSignature);
     if (result == null) {
       final Object resolvedClass = this.resolveSuperclass();
-      if (resolvedClass != null && resolvedClass instanceof JJJVMClassImpl) {
-        result = ((JJJVMClassImpl) resolvedClass).findMethod(methodName, methodSignature);
+      if (resolvedClass != null && resolvedClass instanceof JJJVMClass) {
+        result = ((JJJVMClass) resolvedClass).findMethod(methodName, methodSignature);
       }
     }
     return result;
@@ -402,6 +399,12 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
     return this.declaredMethods.get(makeMethodUID(methodName, methodSignature));
   }
 
+  private void assertCanBeInstantiated() {
+    if ((this.flags & (ACC_ABSTRACT | ACC_INTERFACE)) != 0)  {
+      throw new IllegalStateException("Class '" + this.getName() + "' abstract one or interface");
+    }
+  }
+
   /**
    * Create new instance of the class.
    *
@@ -411,9 +414,11 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
    * @throws Throwable it will be thrown for errors
    */
   public JJJVMObject newInstance(final boolean invokeDefaultConstructor) throws Throwable {
-    final JJJVMObject result = new JJJVMObject(this);
-    initFields(result);
-    if (invokeDefaultConstructor) {
+    final JJJVMObject result = new JJJVMObject(this, null);
+    initInstanceFields(result);
+    if (invokeDefaultConstructor && !this.getClassName().equals("java/lang/Object")) {
+      assertCanBeInstantiated();
+
       final JJJVMMethod constructor = this.findDeclaredMethod("<init>", "()V");
       if (constructor == null) {
         throw new IllegalAccessException("Can't find the default constructor");
@@ -435,20 +440,21 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
    * @throws Throwable it will be thrown for errors
    */
   public JJJVMObject newInstance(final String constructorSignature, final Object[] args, final Object[] stack, final Object[] vars) throws Throwable {
+    assertCanBeInstantiated();
     final JJJVMMethod constructor = this.findMethod("<init>", constructorSignature);
     if (constructor == null) {
       throw new IllegalAccessException("Can't find the constructor [" + getClassName() + ' ' + constructorSignature + ']');
     }
-    final JJJVMObject result = new JJJVMObject(this);
-    initFields(result);
+    final JJJVMObject result = new JJJVMObject(this, null);
+    initInstanceFields(result);
     invoke(this, result, constructor, args, stack, vars);
     return result;
   }
 
-  protected void initFields(final JJJVMObject classInstance) throws Throwable {
+  public JJJVMObject initInstanceFields(final JJJVMObject obj) throws Throwable {
     final Object parent = this.resolveSuperclass();
-    if (parent != null && parent instanceof JJJVMClassImpl) {
-      ((JJJVMClassImpl) parent).initFields(classInstance);
+    if (parent != null && parent instanceof JJJVMClass) {
+      ((JJJVMClass) parent).initInstanceFields(obj);
     }
 
     for (final Entry<String, JJJVMField> current : this.declaredFields.entrySet()) {
@@ -487,13 +493,16 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
       }
 
       if ((theField.getFlags() & JJJVMClassFieldImpl.ACC_STATIC) == 0) {
-        classInstance.set(theField.getName(), fieldValue, false);
+        obj.setFieldValue(theField.getName(), fieldValue, false);
       }
     }
+
+    return obj;
   }
 
   /**
    * Read value of a class static field.
+   *
    * @param fieldName the field name, must not be null
    * @return the value from the static field
    * @throws NoSuchFieldException if the field is not found
@@ -509,6 +518,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
 
   /**
    * Write value into a class static field.
+   *
    * @param fieldName the field name, must not be null
    * @param value value to be written into the field
    * @throws NoSuchFieldException if the field is not found
@@ -523,11 +533,11 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMKlazz
     field.setStaticValue(value);
   }
 
-  public Map<String, JJJVMField> getDeclaredFields() {
+  public Map<String, JJJVMField> getAllDeclaredFields() {
     return this.declaredFields;
   }
 
-  public Map<String, JJJVMMethod> getDeclaredMethods() {
+  public Map<String, JJJVMMethod> getAllDeclaredMethods() {
     return this.declaredMethods;
   }
 }

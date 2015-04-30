@@ -15,9 +15,9 @@
  */
 package com.igormaznitsa.jjjvm.impl;
 
-import com.igormaznitsa.JJJVMField;
-import com.igormaznitsa.jjjvm.JJJVMKlazz;
-import com.igormaznitsa.jjjvm.JJJVMObject;
+import com.igormaznitsa.jjjvm.model.JJJVMField;
+import com.igormaznitsa.jjjvm.model.JJJVMClass;
+import com.igormaznitsa.jjjvm.model.JJJVMObject;
 import java.io.DataInputStream;
 import java.io.IOException;
 
@@ -33,7 +33,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
   private final String signature;
   private final int constantIndexInPool;
   private final int fieldUID;
-  private Object staticValue;
+  private volatile Object staticValue;
 
   /**
    * Write static value in the field.
@@ -76,16 +76,16 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
     this.flags = inStream.readUnsignedShort();
     // name
     final int nameIndex = inStream.readUnsignedShort();
-    this.name = (String) declaringClass.getConstantPool().getItem(nameIndex).asString();
+    this.name = (String) declaringClass.getConstantPool().getItemAt(nameIndex).asString();
     // type
     final int typeIndex = inStream.readUnsignedShort();
-    this.signature = (String) declaringClass.getConstantPool().getItem(typeIndex).asString();
+    this.signature = (String) declaringClass.getConstantPool().getItemAt(typeIndex).asString();
     this.fieldUID = (nameIndex << 16) | typeIndex;
     // attributes
     int attributesCounter = inStream.readUnsignedShort();
     while (--attributesCounter >= 0) {
-      final String attrName = (String) declaringClass.getConstantPool().getItem(inStream.readUnsignedShort()).asString();
-      if (ATTRIBUTE_CONSTANTVALUE.equals(attrName)) {
+      final String attrName = (String) declaringClass.getConstantPool().getItemAt(inStream.readUnsignedShort()).asString();
+      if (ATRNAME_CONSTANTVALUE.equals(attrName)) {
         final int attributeSize = inStream.readInt();
         if (attributeSize != 2) {
           throw new IOException("Wrong size for constant value attribute [" + attributeSize + ']');
@@ -94,7 +94,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
       }
       else {
         // ignore all other attributes
-        inStream.skipBytes((inStream.readInt()));
+        JJJVMImplUtils.skip(inStream,inStream.readInt());
       }
     }
 
@@ -110,7 +110,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
 
   public Object get(final JJJVMObject instance) {
     if ((flags & ACC_STATIC) == 0) {
-      return instance.get(this.name, true);
+      return instance.getFieldValue(this.name, true);
     }
     else {
       return this.staticValue;
@@ -119,7 +119,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
 
   public void set(final JJJVMObject instance, final Object value) {
     if ((flags & ACC_STATIC) == 0) {
-      instance.set(this.name, value, true);
+      instance.setFieldValue(this.name, value, true);
     }
     else {
       this.staticValue = value;
@@ -130,10 +130,10 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
     if (this.constantIndexInPool <= 0) {
       return null;
     }
-    return this.declaringClass.getConstantPool().getItem(this.constantIndexInPool).asObject();
+    return this.declaringClass.getConstantPool().getItemAt(this.constantIndexInPool).asObject();
   }
 
-  public JJJVMKlazz getDeclaringClass() {
+  public JJJVMClass getDeclaringClass() {
     return this.declaringClass;
   }
 
@@ -149,4 +149,8 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
     return this.signature;
   }
 
+  @Override
+  public String toString(){
+    return this.getClass().getCanonicalName()+'['+this.declaringClass.getName()+'#'+this.getName()+' '+this.getSignature()+']';
+  }
 }

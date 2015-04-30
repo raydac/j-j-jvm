@@ -1,8 +1,22 @@
-package com.igormaznitsa.jjjvm;
+/* 
+ * Copyright 2015 Igor Maznitsa (http://www.igormaznitsa.com).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.igormaznitsa.jjjvm.model;
 
-import com.igormaznitsa.jjjvm.JJJVMConstantPool;
+public class JJJVMCPRecord {
 
-public final class JJJVMCPRecord {
   /**
    * Constant pool UTF8 string item.
    * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.7}
@@ -77,10 +91,23 @@ public final class JJJVMCPRecord {
    * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.10}
    */
   public static final int CONSTANT_INVOKEDYNAMIC = 18;
-  private final int type;
-  private final Object value;
-  private final JJJVMConstantPool cpool;
 
+  /**
+   * The Field contains the type of class pool item.
+   */
+  protected final int type;
+  
+  /**
+   * The Value contains content of the class pool item as Object, multi-value items are packed as Integer
+   */
+  protected final Object value;
+  
+  /**
+   * The Link to the owning constant pool.
+   */
+  protected final JJJVMConstantPool cpool;
+
+  
   public JJJVMCPRecord(final JJJVMConstantPool cp, final int type, final Object value) {
     this.cpool = cp;
     this.type = type;
@@ -122,7 +149,7 @@ public final class JJJVMCPRecord {
         return (String) this.value;
       case CONSTANT_CLASSREF:
       case CONSTANT_STRING:
-        return (String) this.cpool.getItem(this.asInt()).asObject();
+        return (String) this.cpool.getItemAt(this.asInt()).asObject();
       default:
         throw new IllegalArgumentException("Can't be presented as String [" + this.type + ']');
     }
@@ -139,22 +166,19 @@ public final class JJJVMCPRecord {
   public String getClassName() {
     final String result;
     switch (this.type) {
-      case CONSTANT_CLASSREF:
-        {
-          result = this.cpool.getItem(this.asInt()).asString();
-        }
-        break;
+      case CONSTANT_CLASSREF: {
+        result = this.cpool.getItemAt(this.asInt()).asString();
+      }
+      break;
       case CONSTANT_METHODREF:
       case CONSTANT_INTERFACEMETHOD:
-      case CONSTANT_FIELDREF:
-        {
-          result = this.cpool.getItem(extractHighUShort()).asString();
-        }
-        break;
-      default:
-        {
-          throw new IllegalArgumentException("Illegal constant pool item");
-        }
+      case CONSTANT_FIELDREF: {
+        result = this.cpool.getItemAt(extractHighUShort()).asString();
+      }
+      break;
+      default: {
+        throw new IllegalArgumentException("Illegal constant pool item");
+      }
     }
     return result;
   }
@@ -162,22 +186,19 @@ public final class JJJVMCPRecord {
   public String getSignature() {
     final String result;
     switch (this.type) {
-      case CONSTANT_NAMETYPEREF:
-        {
-          result = this.cpool.getItem(this.extractLowUShort()).asString();
-        }
-        break;
+      case CONSTANT_NAMETYPEREF: {
+        result = this.cpool.getItemAt(this.extractLowUShort()).asString();
+      }
+      break;
       case CONSTANT_METHODREF:
       case CONSTANT_INTERFACEMETHOD:
-      case CONSTANT_FIELDREF:
-        {
-          result = this.cpool.getItem(this.cpool.getItem(extractLowUShort()).extractLowUShort()).asString();
-        }
-        break;
-      default:
-        {
-          throw new IllegalArgumentException("Illegal constant pool item");
-        }
+      case CONSTANT_FIELDREF: {
+        result = this.cpool.getItemAt(this.cpool.getItemAt(extractLowUShort()).extractLowUShort()).asString();
+      }
+      break;
+      default: {
+        throw new IllegalArgumentException("Illegal constant pool item");
+      }
     }
     return result;
   }
@@ -185,22 +206,19 @@ public final class JJJVMCPRecord {
   public String getName() {
     final String result;
     switch (this.type) {
-      case CONSTANT_NAMETYPEREF:
-        {
-          result = this.cpool.getItem(this.extractHighUShort()).asString();
-        }
-        break;
+      case CONSTANT_NAMETYPEREF: {
+        result = this.cpool.getItemAt(this.extractHighUShort()).asString();
+      }
+      break;
       case CONSTANT_METHODREF:
       case CONSTANT_INTERFACEMETHOD:
-      case CONSTANT_FIELDREF:
-        {
-          result = this.cpool.getItem(this.cpool.getItem(this.extractLowUShort()).extractHighUShort()).asString();
-        }
-        break;
-      default:
-        {
-          throw new IllegalArgumentException("Illegal constant pool item");
-        }
+      case CONSTANT_FIELDREF: {
+        result = this.cpool.getItemAt(this.cpool.getItemAt(this.extractLowUShort()).extractHighUShort()).asString();
+      }
+      break;
+      default: {
+        throw new IllegalArgumentException("Illegal constant pool item");
+      }
     }
     return result;
   }
@@ -208,5 +226,5 @@ public final class JJJVMCPRecord {
   public Object asObject() {
     return this.value;
   }
-  
+
 }

@@ -1,8 +1,15 @@
 package com.igormaznitsa.jjjvm;
 
+import com.igormaznitsa.jjjvm.testclasses.TestObject;
+import com.igormaznitsa.jjjvm.utils.TestProviderImpl;
+import com.igormaznitsa.jjjvm.utils.TestHelper;
+import com.igormaznitsa.jjjvm.utils.Branch;
+import com.igormaznitsa.jjjvm.model.JJJVMMethod;
+import com.igormaznitsa.jjjvm.model.JJJVMProvider;
+import com.igormaznitsa.jjjvm.model.JJJVMClass;
+import com.igormaznitsa.jjjvm.model.JJJVMObject;
 import com.igormaznitsa.jjjvm.impl.JJJVMClassImpl;
-import static com.igormaznitsa.jjjvm.TestHelper.CONST_CLASS;
-import com.igormaznitsa.jjjvm.impl.JSEProviderImpl;
+import com.igormaznitsa.jjjvm.impl.jse.JSEProviderImpl;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -11,7 +18,7 @@ import org.apache.bcel.generic.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassLoader {
+public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.ClassDataLoader {
   public byte[] loadClassBody(String jvmFormattedClassName) throws IOException {
     if (!jvmFormattedClassName.startsWith("com/igormaznitsa/jjjvm/testclasses")) return null;
     try {
@@ -111,7 +118,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
 
   @Test
   public void test_LDCW_ARETURN_class() throws Throwable {
-    final JJJVMKlazz some = new JJJVMClassImpl();
+    final JJJVMClass some = new JJJVMClassImpl();
 
     final JJJVMProvider proc = new TestProviderImpl() {
       @Override
@@ -253,7 +260,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     final JJJVMProvider proc = new TestProviderImpl() {
 
       @Override
-      public Object[] newObjectArray(final JJJVMKlazz source, final String jvmFormattedClassName, final int arrayLength) {
+      public Object[] newObjectArray(final JJJVMClass source, final String jvmFormattedClassName, final int arrayLength) {
         assertEquals("java/lang/Object", jvmFormattedClassName);
         assertEquals(100, arrayLength);
         return new Object[arrayLength];
@@ -271,7 +278,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     
     final TestProviderImpl provider = new TestProviderImpl(){
       @Override
-      public Object newMultidimensional(final JJJVMKlazz source, final String jvmFormattedClassName, final int[] dimensions) {
+      public Object newMultidimensional(final JJJVMClass source, final String jvmFormattedClassName, final int[] dimensions) {
         assertNotNull(source);
         assertEquals(CONST_CLASS_H.replace('.', '/'), jvmFormattedClassName);
         assertArrayEquals(new int[]{1,2,3}, dimensions);
@@ -1095,8 +1102,8 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     final JJJVMProvider processor = new TestProviderImpl(){
       
       @Override
-      public void setStatic(final JJJVMKlazz source, final String className, final String fieldName, final String fieldSignature, final Object value) {
-        assertEquals("com/igormaznitsa/jjjvm/TestObject",className);
+      public void setStatic(final JJJVMClass source, final String className, final String fieldName, final String fieldSignature, final Object value) {
+        assertEquals("com/igormaznitsa/jjjvm/testclasses/TestObject",className);
         assertEquals("sfield",fieldName);
         assertEquals("I",fieldSignature);
         
@@ -1107,8 +1114,8 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
       }
 
       @Override
-      public Object getStatic(final JJJVMKlazz source, final String className, final String fieldName, final String fieldSignature) {
-        assertEquals("com/igormaznitsa/jjjvm/TestObject", className);
+      public Object getStatic(final JJJVMClass source, final String className, final String fieldName, final String fieldSignature) {
+        assertEquals("com/igormaznitsa/jjjvm/testclasses/TestObject", className);
         assertEquals("sfield", fieldName);
         assertEquals("I", fieldSignature);
 
@@ -1120,7 +1127,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
         
     };
 
-    final JJJVMClassImpl test = prepareTestClass(processor, "public int test(int a){ com.igormaznitsa.jjjvm.TestObject.sfield=a; return com.igormaznitsa.jjjvm.TestObject.sfield;}");
+    final JJJVMClassImpl test = prepareTestClass(processor, "public int test(int a){ com.igormaznitsa.jjjvm.testclasses.TestObject.sfield=a; return com.igormaznitsa.jjjvm.testclasses.TestObject.sfield;}");
     assertEquals(23334, executeTestMethod(test, Integer.class, null, 9942343).intValue());
 
     assertTrue(calledGet.get());
@@ -1142,14 +1149,14 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
       private TestObject obj;
       
       @Override
-      public Object allocate(JJJVMKlazz source, String jvmFormattedClassName) {
-        assertEquals("com/igormaznitsa/jjjvm/TestObject",jvmFormattedClassName);
+      public Object allocate(JJJVMClass source, String jvmFormattedClassName) {
+        assertEquals("com/igormaznitsa/jjjvm/testclasses/TestObject",jvmFormattedClassName);
         obj = new TestObject();
         return obj;
       }
 
       @Override
-      public void set(final JJJVMKlazz source, final Object obj, final String fieldName, final String fieldSignature, final Object value) {
+      public void set(final JJJVMClass source, final Object obj, final String fieldName, final String fieldSignature, final Object value) {
         assertSame(this.obj, obj);
         assertEquals("field", fieldName);
         assertEquals("I", fieldSignature);
@@ -1161,7 +1168,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
       }
 
       @Override
-      public Object get(final JJJVMKlazz source, final Object obj, final String fieldName, final String fieldSignature) {
+      public Object get(final JJJVMClass source, final Object obj, final String fieldName, final String fieldSignature) {
         assertSame(this.obj, obj);
         assertEquals("field", fieldName);
         assertEquals("I", fieldSignature);
@@ -1173,7 +1180,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
       }
     };
     
-    final JJJVMClassImpl test = prepareTestClass(processor, "public int test(int a){ com.igormaznitsa.jjjvm.TestObject obj = new com.igormaznitsa.jjjvm.TestObject(); obj.field=a; return obj.field;}");
+    final JJJVMClassImpl test = prepareTestClass(processor, "public int test(int a){ com.igormaznitsa.jjjvm.testclasses.TestObject obj = new com.igormaznitsa.jjjvm.testclasses.TestObject(); obj.field=a; return obj.field;}");
     assertEquals(23334, executeTestMethod(test, Integer.class, null, 9942343).intValue());
 
     assertTrue(calledGet.get());
@@ -1219,7 +1226,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     final JJJVMProvider provider = new TestProviderImpl(){
 
       @Override
-      public void doThrow(JJJVMKlazz caller, Object exception) throws Throwable {
+      public void doThrow(JJJVMClass caller, Object exception) throws Throwable {
         assertNotNull(caller);
         assertSame(obj, exception);
         throw new IOException("HEHEHE");
@@ -1243,7 +1250,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     
     final JJJVMProvider proc = new TestProviderImpl(){
       @Override
-      public boolean checkCast(final JJJVMKlazz caller, final String jvmFormattedClassName, final Object value) {
+      public boolean checkCast(final JJJVMClass caller, final String jvmFormattedClassName, final Object value) {
         assertEquals(CONST_CLASS,jvmFormattedClassName);
         assertEquals(fake,value);
         return flag.get();
@@ -1270,7 +1277,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     final JJJVMProvider proc = new TestProviderImpl(){
 
       @Override
-      public boolean checkCast(final JJJVMKlazz caller, final String jvmFormattedClassName, final Object value) {
+      public boolean checkCast(final JJJVMClass caller, final String jvmFormattedClassName, final Object value) {
         assertEquals(CONST_CLASS, jvmFormattedClassName);
         assertEquals(fake, value);
         return true;
@@ -1287,7 +1294,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   
   @Test
   public void testMONITORENTER_MONITOREXIT_jjjvmobject() throws Throwable {
-    final JJJVMObject obj = new JJJVMObject(null);
+    final JJJVMObject obj = new JJJVMObject(null,null);
     final JJJVMClassImpl test1 = prepareTestClass(new TestProviderImpl(), Type.OBJECT, new ALOAD(1), new MONITORENTER(), new ALOAD(1), new ARETURN());
     final JJJVMClassImpl test2 = prepareTestClass(new TestProviderImpl(), Type.OBJECT, new ALOAD(1), new MONITOREXIT(), new ALOAD(1), new ARETURN());
     
@@ -1307,7 +1314,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     
     final JJJVMProvider prov = new TestProviderImpl(){
       @Override
-      public void doMonitor(final JJJVMKlazz caller, final Object object, final boolean lock) {
+      public void doMonitor(final JJJVMClass caller, final Object object, final boolean lock) {
         counter.incrementAndGet();
         assertNotNull(caller);
         assertSame(obj, object);
@@ -1330,7 +1337,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   @Test
   public void testIntegration_TestTableswitch() throws Throwable {
     final JSEProviderImpl provider = new JSEProviderImpl(this);
-    final JJJVMKlazz testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestTableswitch");
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestTableswitch");
     
     assertTrue(JSEProviderImpl.tryCastTo(testKlazz, "java/lang/Object"));
     assertFalse(JSEProviderImpl.tryCastTo(testKlazz, "java/util/Map"));
@@ -1344,7 +1351,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
     
     final JJJVMObject obj = testKlazz.newInstance("(D)V", new Object[]{arg}, null, null);
     assertNotNull(obj);
-    assertSame(testKlazz, obj.getKlazz());
+    assertSame(testKlazz, obj.getDeclaringClass());
     assertSame(arg, testKlazz.findField("field4").get(obj));
     assertEquals(Integer.valueOf(9876), testKlazz.findField("field1").get(obj));
     assertEquals(Long.valueOf(6666L), testKlazz.findField("field2").get(obj));
@@ -1366,7 +1373,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   @Test
   public void testIntegration_TestInvoke() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
-    final JJJVMKlazz testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInvoke");
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInvoke");
 
     final JJJVMObject obj = testKlazz.newInstance(true);
 
@@ -1379,7 +1386,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   @Test
   public void testIntegration_TestVector() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
-    final JJJVMKlazz testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestVector");
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestVector");
 
     final JJJVMObject obj = testKlazz.newInstance(true);
 
@@ -1400,7 +1407,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   @Test
   public void testClassNameAndVersion() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
-    final JJJVMKlazz testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInnerClasses$NonStaticClass");
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInnerClasses$NonStaticClass");
 
     assertEquals("must be Java 1.5",0x0031, testKlazz.getClassFormatVersion());
     assertEquals("com/igormaznitsa/jjjvm/testclasses/TestInnerClasses$NonStaticClass", testKlazz.getClassName());
@@ -1411,10 +1418,10 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   @Test
   public void testIntegration_TestInnerClasses() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
-    final JJJVMKlazz testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInnerClasses");
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInnerClasses");
     assertEquals(0,JJJVMClassImpl.getNumberOfLoadingClasses());
     
-    assertEquals("TestInnerClasses.java",testKlazz.getSourceFile());
+    assertEquals("TestInnerClasses.java",testKlazz.getSourceFileName());
     final JJJVMObject instance = testKlazz.newInstance(true);
     
     final JJJVMMethod test = testKlazz.findMethod("test", "(II)I");
@@ -1424,7 +1431,7 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   @Test
   public void testIntegration_TestThrow() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
-    final JJJVMKlazz testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestThrow");
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestThrow");
 
     final JJJVMObject obj = testKlazz.newInstance(true);
     
@@ -1464,17 +1471,17 @@ public class JJJVMClassTest extends TestHelper implements JSEProviderImpl.ClassL
   @Test
   public void testIntegration_TestClassInheritance() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
-    final JJJVMKlazz testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestClassInheritance$Klazz3");
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestClassInheritance$Klazz3");
     final JJJVMObject obj = testKlazz.newInstance(true);
-    obj.set("field1", 123, true);
-    obj.set("field2", 345, true);
-    obj.set("field3", 678, true);
+    obj.setFieldValue("field1", 123, true);
+    obj.setFieldValue("field2", 345, true);
+    obj.setFieldValue("field3", 678, true);
     
     assertEquals(123.456d, ((Double)testKlazz.readStaticField("dblStatField")), 0.0d);
     
-    assertEquals(Integer.valueOf(123),obj.get("field1", true));
-    assertEquals(Integer.valueOf(345),obj.get("field2", true));
-    assertEquals(Integer.valueOf(678),obj.get("field3", true));
+    assertEquals(Integer.valueOf(123),obj.getFieldValue("field1", true));
+    assertEquals(Integer.valueOf(345),obj.getFieldValue("field2", true));
+    assertEquals(Integer.valueOf(678),obj.getFieldValue("field3", true));
     
     assertEquals((123*999)/345+678, testKlazz.findMethod("calc", "(I)I").invoke(obj, new Object[]{999}));
   }

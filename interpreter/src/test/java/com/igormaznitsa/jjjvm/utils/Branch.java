@@ -1,4 +1,4 @@
-package com.igormaznitsa.jjjvm;
+package com.igormaznitsa.jjjvm.utils;
 
 import org.apache.bcel.generic.*;
 

@@ -1,18 +1,41 @@
+/* 
+ * Copyright 2015 Igor Maznitsa (http://www.igormaznitsa.com).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.igormaznitsa.jjjvm;
 
-import com.igormaznitsa.JJJVMField;
-import com.igormaznitsa.jjjvm.impl.JJJVMClassMethodImpl;
+import com.igormaznitsa.jjjvm.model.JJJVMConstantPool;
+import com.igormaznitsa.jjjvm.model.JJJVMClass;
+import com.igormaznitsa.jjjvm.model.JJJVMProvider;
+import com.igormaznitsa.jjjvm.model.JJJVMObject;
+import com.igormaznitsa.jjjvm.model.JJJVMCPRecord;
+import com.igormaznitsa.jjjvm.model.JJJVMMethod;
+import com.igormaznitsa.jjjvm.model.JJJVMCatchBlockDescriptor;
+import com.igormaznitsa.jjjvm.model.JJJVMField;
+import com.igormaznitsa.jjjvm.model.*;
 import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class JJJVMInterpreter {
-  private static final Map<String, Integer> argNumberMap = new HashMap<String, Integer>();
+public abstract class JJJVMInterpreter implements JJJVMConstants {
+
+  protected static final Map<String, Integer> numberOfArgumentsCache = new HashMap<String, Integer>();
 
   /**
    * Invoke a method.
    *
-   * @param caller 
+   * @param caller
    * @param instance the 'this' object or null for static methods
    * @param methodToInvoke the method to invoke, must not be null
    * @param args array contains arguments for method, can be null for method
@@ -25,14 +48,18 @@ public abstract class JJJVMInterpreter {
    * @return result of invocation, null for void method
    * @throws Throwable it will be thrown for errors
    */
-  public static Object invoke(final JJJVMKlazz caller, final JJJVMObject instance, final JJJVMMethod methodToInvoke, final Object[] args, final Object[] stack, final Object[] vars) throws Throwable {
-    // implementation of synchronization mechanism
+  public static Object invoke(final JJJVMClass caller, final JJJVMObject instance, final JJJVMMethod methodToInvoke, final Object[] args, final Object[] stack, final Object[] vars) throws Throwable {
     final int methodFlags = methodToInvoke.getFlags();
-    if ((methodFlags & JJJVMClassMethodImpl.ACC_SYNCHRONIZED) != 0) {
+    if ((methodFlags & ACC_NATIVE) != 0) {
+      throw new IllegalArgumentException("Method must not be native [" + methodToInvoke + ']');
+    }
+
+    // implementation of synchronization mechanism
+    if ((methodFlags & ACC_SYNCHRONIZED) != 0) {
       // it's a synchronized method
       final Object syncObject;
 
-      if ((methodFlags & JJJVMClassMethodImpl.ACC_STATIC) != 0) {
+      if ((methodFlags & ACC_STATIC) != 0) {
         // it's a static method
         // we need to use class as the synchro object
         syncObject = methodToInvoke;
@@ -54,7 +81,7 @@ public abstract class JJJVMInterpreter {
   }
 
   // the Heart of the interpreter, it processes byte-code of method {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.3}
-  private static Object _invoke(final JJJVMKlazz caller, final JJJVMObject instance, final JJJVMMethod method, final Object[] args, final int initialStackOffset, final Object[] stack, final Object[] vars) throws Throwable {
+  protected static Object _invoke(final JJJVMClass caller, final JJJVMObject instance, final JJJVMMethod method, final Object[] args, final int initialStackOffset, final Object[] stack, final Object[] vars) throws Throwable {
     final Object[] localVars = vars == null || vars.length < method.getMaxLocals() ? new Object[method.getMaxLocals()] : vars;
 
     final Object[] localMethodStack;
@@ -82,21 +109,21 @@ public abstract class JJJVMInterpreter {
     final int flags = method.getFlags();
 
     // check the method flags
-    if ((flags & (JJJVMClassMethodImpl.ACC_ABSTRACT | JJJVMClassMethodImpl.ACC_STRICT)) != 0) {
+    if ((flags & (ACC_ABSTRACT | ACC_STRICT)) != 0) {
       // decoding
-      if ((flags & JJJVMClassMethodImpl.ACC_ABSTRACT) != 0) {
+      if ((flags & ACC_ABSTRACT) != 0) {
         throw new IllegalStateException("It's an abstract method");
       }
-      if ((flags & JJJVMClassMethodImpl.ACC_STRICT) != 0) {
+      if ((flags & ACC_STRICT) != 0) {
         throw new IllegalStateException("Strict methods not supported");
       }
     }
 
     final JJJVMConstantPool cpool = caller.getConstantPool();
     final JJJVMProvider provider = caller.getProvider();
-    
+
     // if the method is not static, we will need to place "this" in the zero-indexed local variable
-    if ((flags & JJJVMClassMethodImpl.ACC_STATIC) == 0) {
+    if ((flags & ACC_STATIC) == 0) {
       // place "this"
       localVars[0] = instance;
       // the first argument will be at the index 1
@@ -201,7 +228,7 @@ public abstract class JJJVMInterpreter {
               index = (index << 8) | (methodBytecodes[regPC++] & 0xFF);
             }
 
-            final JJJVMCPRecord record = cpool.getItem(index);
+            final JJJVMCPRecord record = cpool.getItemAt(index);
             switch (record.getType()) {
               case JJJVMCPRecord.CONSTANT_INTEGER:
               case JJJVMCPRecord.CONSTANT_FLOAT: {
@@ -234,7 +261,7 @@ public abstract class JJJVMInterpreter {
             final int index = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
 
-            final JJJVMCPRecord record = cpool.getItem(index);
+            final JJJVMCPRecord record = cpool.getItemAt(index);
             switch (record.getType()) {
               case JJJVMCPRecord.CONSTANT_DOUBLE:
               case JJJVMCPRecord.CONSTANT_LONG: {
@@ -1258,7 +1285,7 @@ public abstract class JJJVMInterpreter {
           {
             final int poolIndex = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
-            final JJJVMCPRecord fieldRef = cpool.getItem(poolIndex);
+            final JJJVMCPRecord fieldRef = cpool.getItemAt(poolIndex);
 
             final String className = fieldRef.getClassName();
             final String fieldName = fieldRef.getName();
@@ -1266,8 +1293,8 @@ public abstract class JJJVMInterpreter {
             final Object resolvedClass = className.equals(caller.getClassName()) ? caller : provider.resolveClass(className);
             final Object value;
 
-            if (resolvedClass instanceof JJJVMKlazz) {
-              final JJJVMKlazz theclass = (JJJVMKlazz) resolvedClass;
+            if (resolvedClass instanceof JJJVMClass) {
+              final JJJVMClass theclass = (JJJVMClass) resolvedClass;
               final JJJVMField thefield = theclass.findField(fieldName);
               if (instruction == 178) {
                 value = thefield.getStaticValue();
@@ -1301,7 +1328,7 @@ public abstract class JJJVMInterpreter {
             final int poolIndex = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
 
-            final JJJVMCPRecord fieldRef = cpool.getItem(poolIndex);
+            final JJJVMCPRecord fieldRef = cpool.getItemAt(poolIndex);
             final String fieldName = fieldRef.getName();
 
             if (instruction == 180) {
@@ -1309,7 +1336,7 @@ public abstract class JJJVMInterpreter {
               final Object value = localMethodStack[--regSP];
 
               if (value instanceof JJJVMObject) {
-                final Object result = ((JJJVMObject) value).get(fieldName, true);
+                final Object result = ((JJJVMObject) value).getFieldValue(fieldName, true);
                 if (isCategory2(result)) {
                   localMethodStack[regSP++] = null;
                 }
@@ -1332,7 +1359,7 @@ public abstract class JJJVMInterpreter {
               final Object objectINstance = localMethodStack[--regSP];
 
               if (objectINstance instanceof JJJVMObject) {
-                ((JJJVMObject) objectINstance).set(fieldName, value, true);
+                ((JJJVMObject) objectINstance).setFieldValue(fieldName, value, true);
               }
               else {
                 final String fieldSignature = fieldRef.getSignature();
@@ -1350,7 +1377,7 @@ public abstract class JJJVMInterpreter {
             final int methodRef = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
 
-            final JJJVMCPRecord record = cpool.getItem(methodRef);
+            final JJJVMCPRecord record = cpool.getItemAt(methodRef);
 
             int argsNumber = extractArgsNumber(record.getSignature());
 
@@ -1375,41 +1402,34 @@ public abstract class JJJVMInterpreter {
             final String signature = record.getSignature();
             final String klazzName = record.getClassName();
 
-            if (!(klazzName.equals("java/lang/Object") && methodName.equals("<init>") && signature.equals("()V"))) {
-              final Object resolvedKlazz;
-              if (instruction == 185) {
-                // INOKEINTERFACE
-                resolvedKlazz = objInstance instanceof JJJVMObject ? ((JJJVMObject) objInstance).getKlazz() : provider.resolveClass(objInstance.getClass().getName().replace('.', '/'));
-              }
-              else {
-                resolvedKlazz = klazzName.equals(caller.getClassName()) ? caller: provider.resolveClass(klazzName);
-              }
-              Object result = null;
-              if (resolvedKlazz instanceof JJJVMKlazz) {
-                final JJJVMMethod foundMethod = ((JJJVMKlazz) resolvedKlazz).findMethod(methodName, signature);
-                final JJJVMKlazz jjjvmclazz = foundMethod.getDeclaringClass();
-                if (jjjvmclazz == caller) {
-                  result = _invoke(caller,(JJJVMObject) objInstance, foundMethod, argsArray, regSP, localMethodStack, null);
-                }
-                else {
-                  result = invoke(jjjvmclazz, (JJJVMObject) objInstance, foundMethod, argsArray, null, null);
-                }
-              }
-              else {
-                result = provider.invoke(caller, objInstance, klazzName, methodName, signature, argsArray);
-                if (result != null && "<init>".equals(methodName)) {
-                  // replace all instances by new one
-                  for (int i = 0; i < localMethodStack.length; i++) {
-                    if (localMethodStack[i] == objInstance) {
-                      localMethodStack[i] = result;
-                    }
+            final Object resolvedKlazz;
+            if (instruction == 185) {
+              // INOKEINTERFACE
+              resolvedKlazz = objInstance instanceof JJJVMObject ? ((JJJVMObject) objInstance).getDeclaringClass() : provider.resolveClass(objInstance.getClass().getName().replace('.', '/'));
+            }
+            else {
+              resolvedKlazz = klazzName.equals(caller.getClassName()) ? caller : provider.resolveClass(klazzName);
+            }
+            Object result = null;
+            if (resolvedKlazz instanceof JJJVMClass) {
+              final JJJVMMethod foundMethod = ((JJJVMClass) resolvedKlazz).findMethod(methodName, signature);
+              final JJJVMClass jjjvmclazz = foundMethod.getDeclaringClass();
+              result = _invoke(jjjvmclazz, (JJJVMObject) objInstance, foundMethod, argsArray, regSP, localMethodStack, null);
+            }
+            else {
+              result = provider.invoke(caller, objInstance, klazzName, methodName, signature, argsArray);
+              if (result != null && "<init>".equals(methodName)) {
+                // replace all instances by new one
+                for (int i = 0; i < localMethodStack.length; i++) {
+                  if (localMethodStack[i] == objInstance) {
+                    localMethodStack[i] = result;
                   }
                 }
               }
+            }
 
-              if (signature.charAt(signature.length() - 1) != JJJVMClassMethodImpl.TYPE_VOID) {
-                localMethodStack[regSP++] = result;
-              }
+            if (signature.charAt(signature.length() - 1) != TYPE_VOID) {
+              localMethodStack[regSP++] = result;
             }
           }
           break;
@@ -1421,7 +1441,7 @@ public abstract class JJJVMInterpreter {
           {
             final int classRef = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
-            localMethodStack[regSP++] = provider.allocate(caller, cpool.getItem(classRef).asString());
+            localMethodStack[regSP++] = provider.allocate(caller, cpool.getItemAt(classRef).asString());
           }
           break;
           case 188: // NEWARRAY
@@ -1486,7 +1506,7 @@ public abstract class JJJVMInterpreter {
             regPC += 2;
 
             final int count = ((Integer) localMethodStack[--regSP]);
-            final String className = cpool.getItem(index).getClassName();
+            final String className = cpool.getItemAt(index).getClassName();
             final Object[] objArray = provider.newObjectArray(caller, className, count);
 
             localMethodStack[regSP++] = objArray;
@@ -1517,7 +1537,7 @@ public abstract class JJJVMInterpreter {
           {
             final int cpIndex = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
-            final String rawClassName = cpool.getItem(cpIndex).getClassName();
+            final String rawClassName = cpool.getItemAt(cpIndex).getClassName();
             final int index = regSP - 1;
             final Object object = localMethodStack[index];
 
@@ -1586,7 +1606,7 @@ public abstract class JJJVMInterpreter {
               localMethodStack[--regSP] = null;
             }
 
-            localMethodStack[regSP++] = provider.newMultidimensional(caller, cpool.getItem(classRefIndex).asString(), dimensions);
+            localMethodStack[regSP++] = provider.newMultidimensional(caller, cpool.getItemAt(classRefIndex).asString(), dimensions);
           }
           break;
           case 198: // IFNULL
@@ -1646,9 +1666,9 @@ public abstract class JJJVMInterpreter {
   }
 
   private static int extractArgsNumber(final String methodSignature) {
-    synchronized (argNumberMap) {
-      if (argNumberMap.containsKey(methodSignature)) {
-        return argNumberMap.get(methodSignature);
+    synchronized (numberOfArgumentsCache) {
+      if (numberOfArgumentsCache.containsKey(methodSignature)) {
+        return numberOfArgumentsCache.get(methodSignature);
       }
       else {
         final int len = methodSignature.length();
@@ -1664,7 +1684,7 @@ public abstract class JJJVMInterpreter {
               break;
             case '[':
               continue;
-            case 'L':
+            case TYPE_CLASS:
               counter++;
               objFlag = true;
               break;
@@ -1683,7 +1703,7 @@ public abstract class JJJVMInterpreter {
         if (work) {
           throw new IllegalArgumentException("Wrong signature [" + methodSignature + ']');
         }
-        argNumberMap.put(methodSignature, counter);
+        numberOfArgumentsCache.put(methodSignature, counter);
         return counter;
       }
     }
@@ -1704,7 +1724,7 @@ public abstract class JJJVMInterpreter {
     return (short) ((b0 << 8) | b1);
   }
 
-   private static boolean isCategory2(final Object obj) {
+  private static boolean isCategory2(final Object obj) {
     return obj instanceof Double || obj instanceof Long;
   }
 }

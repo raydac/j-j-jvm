@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.igormaznitsa.jjjvm;
+package com.igormaznitsa.jjjvm.model;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -22,11 +22,11 @@ import java.io.IOException;
  * Record contains data about try..catch block.
  * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.5}
  */
-public final class JJJVMCatchBlockDescriptor {
-  private final int pcStart;
-  private final int pcEnd;
-  private final int codeAddress;
-  private final String jvmFormattedClassName;
+public class JJJVMCatchBlockDescriptor {
+  protected final int pcStart;
+  protected final int pcEnd;
+  protected final int codeAddress;
+  protected final String jvmFormattedClassName;
 
   public int getStartPC() {
     return pcStart;
@@ -56,7 +56,7 @@ public final class JJJVMCatchBlockDescriptor {
   }
   
   public JJJVMCatchBlockDescriptor(final JJJVMConstantPool constantPool, final DataInputStream inStream) throws IOException {
-    this(inStream.readUnsignedShort(), inStream.readUnsignedShort(), inStream.readUnsignedShort(), constantPool.getItem(inStream.readUnsignedShort()).asString());
+    this(inStream.readUnsignedShort(), inStream.readUnsignedShort(), inStream.readUnsignedShort(), constantPool.getItemAt(inStream.readUnsignedShort()).asString());
   }
   
 }
