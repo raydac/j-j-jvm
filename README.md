@@ -18,18 +18,18 @@ public class HelloWorld {
 ```
 And we want to execute the main method of the class with J-J-JVM. To Load the class body we use Javassist. But lets not just print the message but will catch it and make some processing.
 ```Java
-   JJJVMProvider provider = new JSEProviderImpl(){
-      @Override
-      public Object invoke(JJJVMClass caller, Object instance, String jvmFormattedClassName, String methodName, String methodSignature, Object[] arguments) throws Throwable {
-        if (jvmFormattedClassName.equals("java/io/PrintStream") && methodName.equals("println") && methodSignature.equals("(Ljava/lang/String;)V")){
-          System.out.println("<<"+arguments[0]+">>");
-          return null;
-        }
-        return super.invoke(caller, instance, jvmFormattedClassName, methodName, methodSignature, arguments); //To change body of generated methods, choose Tools | Templates.
-      }
-    };
-    JJJVMClassImpl jjjvmClass = new JJJVMClassImpl(new ByteArrayInputStream(javassist.ClassPool.getDefault().get("com.igormaznitsa.testjjjvm.HelloWorld").toBytecode()), provider);
-    jjjvmClass.findMethod("main", "([Ljava/lang/String;)V").invoke(null, null);
+JJJVMProvider provider = new JSEProviderImpl(){
+  @Override
+  public Object invoke(JJJVMClass caller, Object instance, String jvmFormattedClassName, String methodName, String methodSignature, Object[] arguments) throws Throwable {
+    if (jvmFormattedClassName.equals("java/io/PrintStream") && methodName.equals("println") && methodSignature.equals("(Ljava/lang/String;)V")){
+      System.out.println("<<"+arguments[0]+">>");
+      return null;
+    }
+    return super.invoke(caller, instance, jvmFormattedClassName, methodName, methodSignature, arguments); //To change body of generated methods, choose Tools | Templates.
+  }
+};
+JJJVMClassImpl jjjvmClass = new JJJVMClassImpl(new ByteArrayInputStream(javassist.ClassPool.getDefault().get("com.igormaznitsa.testjjjvm.HelloWorld").toBytecode()), provider);
+jjjvmClass.findMethod("main", "([Ljava/lang/String;)V").invoke(null, null);
 ```
 And the code above will print
 ```
