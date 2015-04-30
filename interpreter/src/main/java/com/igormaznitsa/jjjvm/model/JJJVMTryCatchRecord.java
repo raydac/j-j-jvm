@@ -48,15 +48,15 @@ public class JJJVMTryCatchRecord {
     return pcReg >= this.pcStart && pcReg <= this.pcEnd;
   }
 
-  public JJJVMTryCatchRecord(final int pcStart, final int pcEnd, final int pcAddress,final String jvmFormattedClassName){
-    this.jvmFormattedClassName = jvmFormattedClassName;
+  public JJJVMTryCatchRecord(final int pcStart, final int pcEnd, final int pcAddress,final JJJVMConstantPoolItem classRef){
+    this.jvmFormattedClassName = classRef == null ? null : classRef.asString();
     this.pcStart = pcStart;
     this.pcEnd = pcEnd;
     this.codeAddress = pcAddress;
   }
   
   public JJJVMTryCatchRecord(final JJJVMConstantPool constantPool, final DataInputStream inStream) throws IOException {
-    this(inStream.readUnsignedShort(), inStream.readUnsignedShort(), inStream.readUnsignedShort(), constantPool.getItemAt(inStream.readUnsignedShort()).asString());
+    this(inStream.readUnsignedShort(), inStream.readUnsignedShort(), inStream.readUnsignedShort(), constantPool.getItemAt(inStream.readUnsignedShort()));
   }
   
 }

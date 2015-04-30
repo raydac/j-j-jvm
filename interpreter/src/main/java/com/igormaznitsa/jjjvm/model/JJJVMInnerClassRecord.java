@@ -60,11 +60,11 @@ public class JJJVMInnerClassRecord {
     return this.flags;
   }
   
-  public JJJVMCPRecord getInnerClassInfo(){
+  public JJJVMConstantPoolItem getInnerClassInfo(){
     return this.declaringClass.getConstantPool().getItemAt(this.innerClassInfoIndex);
   }
   
-  public JJJVMCPRecord getOuterClassInfo(){
+  public JJJVMConstantPoolItem getOuterClassInfo(){
     return this.declaringClass.getConstantPool().getItemAt(this.outerClassInfoIndex);
   }
   

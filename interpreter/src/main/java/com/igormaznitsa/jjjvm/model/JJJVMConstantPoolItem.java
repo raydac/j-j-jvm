@@ -15,7 +15,11 @@
  */
 package com.igormaznitsa.jjjvm.model;
 
-public class JJJVMCPRecord {
+/**
+ * Describing structure and contains data of a constant pool item. 
+ * Data for multi-field items presented as packed integer object
+ */
+public class JJJVMConstantPoolItem {
 
   /**
    * Constant pool UTF8 string item.
@@ -108,7 +112,7 @@ public class JJJVMCPRecord {
   protected final JJJVMConstantPool cpool;
 
   
-  public JJJVMCPRecord(final JJJVMConstantPool cp, final int type, final Object value) {
+  public JJJVMConstantPoolItem(final JJJVMConstantPool cp, final int type, final Object value) {
     this.cpool = cp;
     this.type = type;
     this.value = value;

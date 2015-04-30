@@ -19,7 +19,7 @@ import com.igormaznitsa.jjjvm.model.JJJVMConstantPool;
 import com.igormaznitsa.jjjvm.model.JJJVMClass;
 import com.igormaznitsa.jjjvm.model.JJJVMProvider;
 import com.igormaznitsa.jjjvm.model.JJJVMObject;
-import com.igormaznitsa.jjjvm.model.JJJVMCPRecord;
+import com.igormaznitsa.jjjvm.model.JJJVMConstantPoolItem;
 import com.igormaznitsa.jjjvm.model.JJJVMMethod;
 import com.igormaznitsa.jjjvm.model.JJJVMTryCatchRecord;
 import com.igormaznitsa.jjjvm.model.JJJVMField;
@@ -62,7 +62,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
       if ((methodFlags & ACC_STATIC) != 0) {
         // it's a static method
         // we need to use class as the synchro object
-        syncObject = methodToInvoke;
+        syncObject = caller;
       }
       else {
         // it's a nonstatic method
@@ -228,18 +228,18 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
               index = (index << 8) | (methodBytecodes[regPC++] & 0xFF);
             }
 
-            final JJJVMCPRecord record = cpool.getItemAt(index);
+            final JJJVMConstantPoolItem record = cpool.getItemAt(index);
             switch (record.getType()) {
-              case JJJVMCPRecord.CONSTANT_INTEGER:
-              case JJJVMCPRecord.CONSTANT_FLOAT: {
+              case JJJVMConstantPoolItem.CONSTANT_INTEGER:
+              case JJJVMConstantPoolItem.CONSTANT_FLOAT: {
                 localMethodStack[regSP++] = record.getValue();
               }
               break;
-              case JJJVMCPRecord.CONSTANT_STRING: {
+              case JJJVMConstantPoolItem.CONSTANT_STRING: {
                 localMethodStack[regSP++] = record.asString();
               }
               break;
-              case JJJVMCPRecord.CONSTANT_CLASSREF: {
+              case JJJVMConstantPoolItem.CONSTANT_CLASSREF: {
                 final String jvmFormattedClassName = record.getClassName();
                 final Object clazz = provider.resolveClass(jvmFormattedClassName);
                 if (clazz == null) {
@@ -248,8 +248,8 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
                 localMethodStack[regSP++] = clazz;
               }
               break;
-              case JJJVMCPRecord.CONSTANT_METHODTYPE:
-              case JJJVMCPRecord.CONSTANT_METHODHANDLE:
+              case JJJVMConstantPoolItem.CONSTANT_METHODTYPE:
+              case JJJVMConstantPoolItem.CONSTANT_METHODHANDLE:
                 throw new UnsupportedOperationException("Method type and Method handle is not supported");
               default:
                 throw new Error("Unsupported constant type for LDC [" + record.getType() + ']');
@@ -261,10 +261,10 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             final int index = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
 
-            final JJJVMCPRecord record = cpool.getItemAt(index);
+            final JJJVMConstantPoolItem record = cpool.getItemAt(index);
             switch (record.getType()) {
-              case JJJVMCPRecord.CONSTANT_DOUBLE:
-              case JJJVMCPRecord.CONSTANT_LONG: {
+              case JJJVMConstantPoolItem.CONSTANT_DOUBLE:
+              case JJJVMConstantPoolItem.CONSTANT_LONG: {
                 localMethodStack[regSP++] = null;
               }
               break;
@@ -1285,7 +1285,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           {
             final int poolIndex = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
-            final JJJVMCPRecord fieldRef = cpool.getItemAt(poolIndex);
+            final JJJVMConstantPoolItem fieldRef = cpool.getItemAt(poolIndex);
 
             final String className = fieldRef.getClassName();
             final String fieldName = fieldRef.getName();
@@ -1328,7 +1328,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             final int poolIndex = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
 
-            final JJJVMCPRecord fieldRef = cpool.getItemAt(poolIndex);
+            final JJJVMConstantPoolItem fieldRef = cpool.getItemAt(poolIndex);
             final String fieldName = fieldRef.getName();
 
             if (instruction == 180) {
@@ -1377,7 +1377,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             final int methodRef = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
 
-            final JJJVMCPRecord record = cpool.getItemAt(methodRef);
+            final JJJVMConstantPoolItem record = cpool.getItemAt(methodRef);
 
             int argsNumber = extractArgsNumber(record.getSignature());
 

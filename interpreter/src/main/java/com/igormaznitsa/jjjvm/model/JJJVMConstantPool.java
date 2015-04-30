@@ -37,5 +37,5 @@ public interface JJJVMConstantPool {
    * @param itemIndex the index of constant pool item to get.
    * @return the constant pool item for its index.
    */
-  JJJVMCPRecord getItemAt(int itemIndex);
+  JJJVMConstantPoolItem getItemAt(int itemIndex);
 }

@@ -17,13 +17,13 @@ package com.igormaznitsa.jjjvm.impl;
 
 import com.igormaznitsa.jjjvm.model.JJJVMClass;
 import com.igormaznitsa.jjjvm.model.JJJVMConstantPool;
-import com.igormaznitsa.jjjvm.model.JJJVMCPRecord;
+import com.igormaznitsa.jjjvm.model.JJJVMConstantPoolItem;
 import java.io.DataInputStream;
 import java.io.IOException;
 
 public class JJJVMConstantPoolImpl implements JJJVMConstantPool {
 
-  private final JJJVMCPRecord[] records;
+  private final JJJVMConstantPoolItem[] records;
   private final JJJVMClass klazz;
 
   public JJJVMConstantPoolImpl(final JJJVMClass klazz, final DataInputStream inStream) throws IOException {
@@ -32,7 +32,7 @@ public class JJJVMConstantPoolImpl implements JJJVMConstantPool {
     this.klazz = klazz;
 
     int itemsNumber = inStream.readUnsignedShort();
-    this.records = new JJJVMCPRecord[itemsNumber];
+    this.records = new JJJVMConstantPoolItem[itemsNumber];
     this.records[index++] = null;
     itemsNumber--;
 
@@ -43,11 +43,11 @@ public class JJJVMConstantPoolImpl implements JJJVMConstantPool {
       final int recordType = inStream.readUnsignedByte();
       final Object recordValue;
       switch (recordType) {
-        case JJJVMCPRecord.CONSTANT_UTF8: {
+        case JJJVMConstantPoolItem.CONSTANT_UTF8: {
           recordValue = inStream.readUTF();
         }
         break;
-        case JJJVMCPRecord.CONSTANT_UNICODE: {
+        case JJJVMConstantPoolItem.CONSTANT_UNICODE: {
           final int len = inStream.readUnsignedShort();
           for (int i = 0; i < len; i++) {
             char ch_char = (char) inStream.readUnsignedShort();
@@ -57,41 +57,41 @@ public class JJJVMConstantPoolImpl implements JJJVMConstantPool {
           strBuffer.setLength(0);
         }
         break;
-        case JJJVMCPRecord.CONSTANT_INTEGER: {
+        case JJJVMConstantPoolItem.CONSTANT_INTEGER: {
           recordValue = inStream.readInt();
         }
         break;
-        case JJJVMCPRecord.CONSTANT_FLOAT: {
+        case JJJVMConstantPoolItem.CONSTANT_FLOAT: {
           recordValue = inStream.readFloat();
         }
         break;
-        case JJJVMCPRecord.CONSTANT_LONG: {
+        case JJJVMConstantPoolItem.CONSTANT_LONG: {
           recordValue = inStream.readLong();
           doubleRecordItem = true;
         }
         break;
-        case JJJVMCPRecord.CONSTANT_DOUBLE: {
+        case JJJVMConstantPoolItem.CONSTANT_DOUBLE: {
           recordValue = inStream.readDouble();
           doubleRecordItem = true;
         }
         break;
-        case JJJVMCPRecord.CONSTANT_CLASSREF:
-        case JJJVMCPRecord.CONSTANT_STRING: {
+        case JJJVMConstantPoolItem.CONSTANT_CLASSREF:
+        case JJJVMConstantPoolItem.CONSTANT_STRING: {
           recordValue = inStream.readUnsignedShort();
         }
         break;
-        case JJJVMCPRecord.CONSTANT_FIELDREF:
-        case JJJVMCPRecord.CONSTANT_METHODREF:
-        case JJJVMCPRecord.CONSTANT_INTERFACEMETHOD:
-        case JJJVMCPRecord.CONSTANT_NAMETYPEREF:
-        case JJJVMCPRecord.CONSTANT_METHODHANDLE:
-        case JJJVMCPRecord.CONSTANT_INVOKEDYNAMIC: {
+        case JJJVMConstantPoolItem.CONSTANT_FIELDREF:
+        case JJJVMConstantPoolItem.CONSTANT_METHODREF:
+        case JJJVMConstantPoolItem.CONSTANT_INTERFACEMETHOD:
+        case JJJVMConstantPoolItem.CONSTANT_NAMETYPEREF:
+        case JJJVMConstantPoolItem.CONSTANT_METHODHANDLE:
+        case JJJVMConstantPoolItem.CONSTANT_INVOKEDYNAMIC: {
           final int high = inStream.readUnsignedShort();
           final int low = inStream.readUnsignedShort();
           recordValue = (high << 16) | low;
         }
         break;
-        case JJJVMCPRecord.CONSTANT_METHODTYPE: {
+        case JJJVMConstantPoolItem.CONSTANT_METHODTYPE: {
           final int descIndex = inStream.readUnsignedShort();
           recordValue = descIndex;
         }
@@ -101,7 +101,7 @@ public class JJJVMConstantPoolImpl implements JJJVMConstantPool {
         }
       }
 
-      this.records[index++] = new JJJVMCPRecord(this, recordType, recordValue);
+      this.records[index++] = new JJJVMConstantPoolItem(this, recordType, recordValue);
       if (doubleRecordItem) {
         itemsNumber--;
         index++;
@@ -114,7 +114,7 @@ public class JJJVMConstantPoolImpl implements JJJVMConstantPool {
     return this.klazz;
   }
 
-  public JJJVMCPRecord getItemAt(final int index) {
+  public JJJVMConstantPoolItem getItemAt(final int index) {
     return this.records[index];
   }
 
