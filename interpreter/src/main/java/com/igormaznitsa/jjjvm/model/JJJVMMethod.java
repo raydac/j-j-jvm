@@ -28,5 +28,4 @@ public interface JJJVMMethod extends JJJVMConstants {
   
   JJJVMCatchBlockDescriptor[] getCatchBlockDescriptors();
   Object invoke(JJJVMObject instance, Object[] arguments) throws Throwable;
-  boolean isResultVoid();
 }

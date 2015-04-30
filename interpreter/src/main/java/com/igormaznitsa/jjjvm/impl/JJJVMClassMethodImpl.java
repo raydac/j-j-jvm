@@ -28,6 +28,7 @@ import java.io.IOException;
  * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.6}
  */
 public final class JJJVMClassMethodImpl implements JJJVMMethod {
+
   private final JJJVMClass declaringClass;
   private final int flags;
   private final String name;
@@ -37,27 +38,25 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
   private final int maxStackDepth;
   private final int maxLocals;
   private final byte[] bytecode;
-  private final boolean resultVoid;
-  
+
   JJJVMClassMethodImpl(final JJJVMClassImpl declaringClass, final DataInputStream inStream) throws IOException {
     final JJJVMConstantPoolImpl cpool = declaringClass.getConstantPool();
-    
+
     this.declaringClass = declaringClass;
     this.flags = inStream.readUnsignedShort();
     final int nameIndex = inStream.readUnsignedShort();
     final int descriptorIndex = inStream.readUnsignedShort();
     this.name = cpool.getItemAt(nameIndex).asString();
     this.signature = cpool.getItemAt(descriptorIndex).asString();
-    this.resultVoid = this.signature.endsWith("V");
-    
+
     int numberOfAttrs = inStream.readUnsignedShort();
-    
-    String [] declExceptions = null;
+
+    String[] declExceptions = null;
     int lmaxStackDepth = -1;
     int lmaxLocalVars = -1;
-    byte [] lbytecode = null;
-    JJJVMCatchBlockDescriptor [] lcatchBlocks = null;
-    
+    byte[] lbytecode = null;
+    JJJVMCatchBlockDescriptor[] lcatchBlocks = null;
+
     while (--numberOfAttrs >= 0) {
       final String attrName = cpool.getItemAt(inStream.readUnsignedShort()).asString();
       // read the size of the attribute data
@@ -73,7 +72,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
       else {
         if (ATTRNAME_CODE.equals(attrName)) {
           // read the method bytecode and its attributes
-          lmaxStackDepth= inStream.readUnsignedShort();
+          lmaxStackDepth = inStream.readUnsignedShort();
           lmaxLocalVars = inStream.readUnsignedShort();
           lbytecode = new byte[inStream.readInt()];
           inStream.readFully(lbytecode);
@@ -99,31 +98,27 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
     if (lcatchBlocks == null) {
       lcatchBlocks = new JJJVMCatchBlockDescriptor[0];
     }
-    
+
     this.declaredExceptions = declExceptions;
     this.catchBlocks = lcatchBlocks;
     this.maxStackDepth = lmaxStackDepth;
     this.maxLocals = lmaxLocalVars;
     this.bytecode = lbytecode;
-  } 
-
-  public String [] getDeclaredExceptions() {
-    return this.declaredExceptions;
   }
 
-  public boolean isResultVoid() {
-    return this.resultVoid;
+  public String[] getDeclaredExceptions() {
+    return this.declaredExceptions;
   }
 
   public Object invoke(final JJJVMObject instance, final Object[] arguments) throws Throwable {
     return JJJVMInterpreter.invoke(this.declaringClass, instance, this, arguments, null, null);
   }
-  
-  public JJJVMClass getDeclaringClass(){
+
+  public JJJVMClass getDeclaringClass() {
     return this.declaringClass;
   }
-  
-  public JJJVMCatchBlockDescriptor [] getCatchBlockDescriptors() {
+
+  public JJJVMCatchBlockDescriptor[] getCatchBlockDescriptors() {
     return this.catchBlocks;
   }
 
