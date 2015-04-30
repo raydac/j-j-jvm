@@ -68,7 +68,16 @@ public class JSEProviderImpl implements JJJVMProvider {
 
   protected final ClassDataLoader classDataLoader;
 
+  public JSEProviderImpl(){
+    this.classDataLoader = new ClassDataLoader() {
+      public byte[] loadClassBody(String jvmFormattedClassName) throws IOException {
+        return null;
+      }
+    };
+  }
+  
   public JSEProviderImpl(final ClassDataLoader classLoader) {
+    if (classLoader == null) throw new NullPointerException("Loader is null");
     this.classDataLoader = classLoader;
   }
 
