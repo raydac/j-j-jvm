@@ -16,6 +16,7 @@
 package com.igormaznitsa.jjjvm.impl;
 
 import com.igormaznitsa.jjjvm.*;
+import static com.igormaznitsa.jjjvm.impl.JJJVMClassImpl.normalizeClassName;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.*;
@@ -27,24 +28,6 @@ import java.util.*;
  * @see sun.misc.Unsafe
  */
 public class JSEProviderImpl implements JJJVMProvider {
-
-  private static final sun.misc.Unsafe UNSAFE = getUnsafe();
-
-  private static sun.misc.Unsafe getUnsafe() {
-    try {
-      final Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-      field.setAccessible(true);
-      return (sun.misc.Unsafe) field.get(null);
-    }
-    catch (Exception ex) {
-      throw new Error("Can't get access to sun.misc.Unsafe");
-    }
-  }
-
-  private final Map<String, Object> classCache = new HashMap<String, Object>();
-  private final Map<String, Class[]> parsedArgsCache = new HashMap<String, Class[]>();
-  private final Map<String, Map<String, Boolean>> cachedCast = new HashMap<String, Map<String, Boolean>>();
-
   /**
    * Class loader which loads and provides class byte-code
    */
@@ -61,33 +44,50 @@ public class JSEProviderImpl implements JJJVMProvider {
     byte[] loadClassBody(String jvmFormattedClassName) throws IOException;
   }
 
-  private final ClassLoader classBodyProvider;
+  protected static final sun.misc.Unsafe UNSAFE = getUnsafe();
+
+  private static sun.misc.Unsafe getUnsafe() {
+    try {
+      final Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+      field.setAccessible(true);
+      return (sun.misc.Unsafe) field.get(null);
+    }
+    catch (Exception ex) {
+      throw new Error("Can't get access to sun.misc.Unsafe");
+    }
+  }
+
+  protected final Map<String, Object> classCache = new HashMap<String, Object>();
+  protected final Map<String, Class[]> parsedArgsCache = new HashMap<String, Class[]>();
+  protected final Map<String, Map<String, Boolean>> cachedCast = new HashMap<String, Map<String, Boolean>>();
+
+  protected final ClassLoader classBodyProvider;
 
   public JSEProviderImpl(final ClassLoader classLoader) {
     this.classBodyProvider = classLoader;
   }
 
-  private JJJVMClass loadClassFromLoader(final String jvmFormattedClassName) throws Throwable {
+  protected JJJVMKlazz loadClassFromLoader(final String jvmFormattedClassName) throws Throwable {
     final byte[] classBody = this.classBodyProvider.loadClassBody(jvmFormattedClassName);
     if (classBody == null) {
       throw new ClassNotFoundException("Can't find body for class '" + jvmFormattedClassName + '\'');
     }
-    return new JJJVMClass(new ByteArrayInputStream(classBody), this);
+    return new JJJVMClassImpl(new ByteArrayInputStream(classBody), this);
   }
   
-  public JJJVMClass resolveInnerClass(final JJJVMClass caller, final JJJVMInnerClassRecord innerClassRecord) throws Throwable {
+  public JJJVMKlazz resolveInnerClass(final JJJVMKlazz caller, final JJJVMInnerClassRecord innerClassRecord) throws Throwable {
     final String outerClassName = innerClassRecord.getOuterClassInfo() == null ? null : innerClassRecord.getOuterClassInfo().getClassName();
     final String innerClassName = innerClassRecord.getInnerClassInfo().getClassName();
 
-    JJJVMClass result;
+    JJJVMKlazz result;
     
     synchronized (this.classCache) {
-      result = (JJJVMClass) this.classCache.get(innerClassName);
+      result = (JJJVMKlazz) this.classCache.get(innerClassName);
       if (result == null) {
-        if (outerClassName != null && !this.classCache.containsKey(outerClassName) && !JJJVMClass.isClassLoading(outerClassName)) {
-          final JJJVMClass outerClass = loadClassFromLoader(outerClassName);
+        if (outerClassName != null && !this.classCache.containsKey(outerClassName) && !JJJVMClassImpl.isClassLoading(outerClassName)) {
+          final JJJVMKlazz outerClass = loadClassFromLoader(outerClassName);
           this.classCache.put(outerClassName, outerClass);
-          result = (JJJVMClass) this.classCache.get(innerClassName);
+          result = (JJJVMClassImpl) this.classCache.get(innerClassName);
           if (result == null) {
             throw new Error("Unexpectedstate, inner class [" + innerClassName + "] is not loaded");
           }
@@ -108,7 +108,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     if (jvmFormattedClassName == null) {
       throw new NullPointerException("Class name is null");
     }
-    if (!(clazz instanceof Class || clazz instanceof JJJVMClass)) {
+    if (!(clazz instanceof Class || clazz instanceof JJJVMClassImpl)) {
       throw new IllegalArgumentException("unexpected class object");
     }
     synchronized (this.classCache) {
@@ -132,20 +132,20 @@ public class JSEProviderImpl implements JJJVMProvider {
     return result;
   }
 
-  public Object allocate(final JJJVMClass caller, final String jvmFormattedClassName) throws Throwable {
+  public Object allocate(final JJJVMKlazz caller, final String jvmFormattedClassName) throws Throwable {
     final Object klazz = resolveClass(jvmFormattedClassName);
-    if (klazz instanceof JJJVMClass) {
-      return ((JJJVMClass) klazz).newInstance(false);
+    if (klazz instanceof JJJVMKlazz) {
+      return ((JJJVMKlazz) klazz).newInstance(false);
     }
     else {
       return UNSAFE.allocateInstance((Class) klazz);
     }
   }
 
-  public Object invoke(final JJJVMClass caller, final Object instance, final String jvmFormattedClassName, final String methodName, final String methodSignature, final Object[] arguments) throws Throwable {
+  public Object invoke(final JJJVMKlazz caller, final Object instance, final String jvmFormattedClassName, final String methodName, final String methodSignature, final Object[] arguments) throws Throwable {
     if (instance instanceof JJJVMObject) {
-      final JJJVMClass klazz = ((JJJVMObject) instance).getKlazz();
-      return klazz.invoke((JJJVMObject) instance, klazz.findMethod(methodName, methodSignature), arguments, null, null);
+      final JJJVMKlazz klazz = ((JJJVMObject) instance).getKlazz();
+      return JJJVMInterpreter.invoke(klazz, (JJJVMObject) instance, klazz.findMethod(methodName, methodSignature), arguments, null, null);
     }
     else {
       final Object resolvedClass = resolveClass(jvmFormattedClassName);
@@ -173,10 +173,10 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  public Object[] newObjectArray(final JJJVMClass caller, final String jvmFormattedClassName, final int arrayLength) throws Throwable {
+  public Object[] newObjectArray(final JJJVMKlazz caller, final String jvmFormattedClassName, final int arrayLength) throws Throwable {
     final Object resolvedClass = resolveClass(jvmFormattedClassName);
-    if (resolvedClass instanceof JJJVMClass) {
-      return new JJJVMClass[arrayLength];
+    if (resolvedClass instanceof JJJVMKlazz) {
+      return new JJJVMKlazz[arrayLength];
     }
     else {
       return (Object[]) Array.newInstance((Class) resolvedClass, arrayLength);
@@ -210,7 +210,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     return buffer.toString();
   }
 
-  public Object newMultidimensional(final JJJVMClass caller, final String jvmFormattedClassName, final int[] arrayDimensions) throws Throwable {
+  public Object newMultidimensional(final JJJVMKlazz caller, final String jvmFormattedClassName, final int[] arrayDimensions) throws Throwable {
     final String extractedType = extractTypeFromFieldSignature(jvmFormattedClassName);
 
     final Object resolvedClass;
@@ -248,8 +248,8 @@ public class JSEProviderImpl implements JJJVMProvider {
       resolvedClass = resolveClass(extractedType);
     }
 
-    if (resolvedClass instanceof JJJVMClass) {
-      return Array.newInstance(JJJVMClass.class, arrayDimensions);
+    if (resolvedClass instanceof JJJVMClassImpl) {
+      return Array.newInstance(JJJVMClassImpl.class, arrayDimensions);
     }
     else {
       final Class klazz = (Class) resolvedClass;
@@ -257,7 +257,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  private static Field findField(final Class klazz, final String fieldName) throws Throwable {
+  protected static Field findField(final Class klazz, final String fieldName) throws Throwable {
     Field found = klazz.getDeclaredField(fieldName);
     if (found == null) {
       final Class superKlazz = klazz.getSuperclass();
@@ -272,7 +272,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     return found;
   }
 
-  private static Method findMethod(final Class klazz, final String methodName, final Class[] types) throws Throwable {
+  protected static Method findMethod(final Class klazz, final String methodName, final Class[] types) throws Throwable {
     Method found = klazz.getDeclaredMethod(methodName, types);
     if (found == null) {
       final Class superKlazz = klazz.getSuperclass();
@@ -287,7 +287,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     return found;
   }
 
-  public Object get(final JJJVMClass caller, final Object obj, final String fieldName, final String fieldSignature) throws Throwable {
+  public Object get(final JJJVMKlazz caller, final Object obj, final String fieldName, final String fieldSignature) throws Throwable {
     if (obj instanceof JJJVMObject) {
       final JJJVMObject jjjobj = (JJJVMObject) obj;
       return jjjobj.getKlazz().findDeclaredField(fieldName).get(jjjobj);
@@ -297,7 +297,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  public void set(final JJJVMClass caller, final Object obj, final String fieldName, final String fieldSignature, final Object fieldValue) throws Throwable {
+  public void set(final JJJVMKlazz caller, final Object obj, final String fieldName, final String fieldSignature, final Object fieldValue) throws Throwable {
     if (obj instanceof JJJVMObject) {
       final JJJVMObject jjjobj = (JJJVMObject) obj;
       jjjobj.getKlazz().findDeclaredField(fieldName).set(jjjobj, fieldValue);
@@ -307,27 +307,129 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  public Object getStatic(final JJJVMClass caller, final String jvmFormattedClassName, final String fieldName, final String fieldSignature) throws Throwable {
+  public Object getStatic(final JJJVMKlazz caller, final String jvmFormattedClassName, final String fieldName, final String fieldSignature) throws Throwable {
     final Object resolved = resolveClass(jvmFormattedClassName);
-    if (resolved instanceof JJJVMClass) {
-      return ((JJJVMClass) resolved).findDeclaredField(fieldName).getStaticValue();
+    if (resolved instanceof JJJVMClassImpl) {
+      return ((JJJVMKlazz) resolved).findDeclaredField(fieldName).getStaticValue();
     }
     else {
       return findField((Class) resolved, fieldName).get(null);
     }
   }
 
-  public void setStatic(final JJJVMClass caller, final String jvmFormattedClassName, final String fieldName, final String fieldSignature, final Object value) throws Throwable {
+  public void setStatic(final JJJVMKlazz caller, final String jvmFormattedClassName, final String fieldName, final String fieldSignature, final Object value) throws Throwable {
     final Object resolved = resolveClass(jvmFormattedClassName);
-    if (resolved instanceof JJJVMClass) {
-      ((JJJVMClass) resolved).findDeclaredField(fieldName).setStaticValue(value);
+    if (resolved instanceof JJJVMClassImpl) {
+      ((JJJVMClassImpl) resolved).findDeclaredField(fieldName).setStaticValue(value);
     }
     else {
       findField((Class) resolved, fieldName).set(null, value);
     }
   }
 
-  public boolean checkCast(final JJJVMClass caller, final String jvmFormattedClassName, final Object value) throws Throwable {
+  /**
+   * Check is it possible or to to cast the class to class defined by its name.
+   *
+   * @param jvmFormattedClassName name of the target class, must not be null
+   * @return true if the class can be casted to the target class, false
+   * otherwise
+   * @throws Throwable it will be thrown for errors
+   */
+  public static boolean tryCastTo(final JJJVMKlazz klazz, final String jvmFormattedClassName) throws Throwable {
+    final boolean result;
+    if ("java/lang/Object".equals(jvmFormattedClassName)) {
+      result = true;
+    }
+    else {
+      result = findClassForNameInHierarchy(klazz, jvmFormattedClassName) != null;
+    }
+    return result;
+  }
+
+  /**
+   * Make search among ancestors and interfaces of a class for a class defined
+   * by its normalized name
+   *
+   * @param klazz a class which ancestors will be used for search, it can be
+   * null
+   * @param normalClassName normalized class name of target class, must not be
+   * null
+   * @return object of found class or null if not found or the root class is
+   * null
+   * @throws Throwable it will be thrown for error
+   */
+  public static Class findClassForNameInHierarchy(final Class klazz, final String normalClassName) throws Throwable {
+    if (klazz == null) {
+      return null;
+    }
+    if ("java.lang.Object".equals(normalClassName)) {
+      return java.lang.Object.class;
+    }
+
+    if (klazz.getName().equals(normalClassName)) {
+      return klazz;
+    }
+    for (final Class interfaceClass : klazz.getInterfaces()) {
+      final Class obj = findClassForNameInHierarchy(interfaceClass, normalClassName);
+      if (obj != null) {
+        return obj;
+      }
+    }
+    return findClassForNameInHierarchy(klazz.getSuperclass(), normalClassName);
+  }
+
+  /**
+   * Make search among ancestors and interfaces of a JJJVMClass for a class
+   * defined by its jvm formatted name.
+   *
+   * @param klazz a class which ancestors will be used for search, it can be
+   * null
+   * @param jvmFormattedClassName jvm formatted class name name of target class,
+   * must not be null
+   * @return object of found class or null if not found or the root class is
+   * null
+   * @throws Throwable it will be thrown for error
+   */
+  public static Object findClassForNameInHierarchy(final JJJVMKlazz klazz, final String jvmFormattedClassName) throws Throwable {
+    if (klazz == null) {
+      return false;
+    }
+    if ("java/lang/Object".equals(jvmFormattedClassName)) {
+      return java.lang.Object.class;
+    }
+    if (jvmFormattedClassName.equals(klazz.getClassName())) {
+      return klazz;
+    }
+
+    final String normalizedName = normalizeClassName(jvmFormattedClassName);
+
+    for (final String inter : klazz.getInterfaces()) {
+      if (inter.equals(jvmFormattedClassName)) {
+        return true;
+      }
+      final Object resolvedClass = klazz.getProvider().resolveClass(jvmFormattedClassName);
+      final Object detected;
+      if (resolvedClass instanceof JJJVMKlazz) {
+        detected = findClassForNameInHierarchy((JJJVMKlazz) resolvedClass, jvmFormattedClassName);
+      }
+      else {
+        detected = findClassForNameInHierarchy((Class) resolvedClass, jvmFormattedClassName);
+      }
+      if (detected != null) {
+        return detected;
+      }
+    }
+
+    final Object superKlazz = klazz.resolveSuperclass();
+    if (superKlazz instanceof JJJVMKlazz) {
+      return findClassForNameInHierarchy((JJJVMKlazz) superKlazz, jvmFormattedClassName);
+    }
+    else {
+      return findClassForNameInHierarchy((Class) superKlazz, normalizedName);
+    }
+  }
+
+  public boolean checkCast(final JJJVMKlazz caller, final String jvmFormattedClassName, final Object value) throws Throwable {
     if ("java/lang/Object".equals(jvmFormattedClassName)) {
       return true;
     }
@@ -345,7 +447,7 @@ public class JSEProviderImpl implements JJJVMProvider {
 
         Boolean flag = record.get(objClassName);
         if (flag == null) {
-          result = JJJVMClass.findClassForNameInHierarchy(jjjvmObj.getKlazz(), jvmFormattedClassName) != null;
+          result = findClassForNameInHierarchy(jjjvmObj.getKlazz(), jvmFormattedClassName) != null;
           record.put(objClassName, result);
         }
         else {
@@ -373,7 +475,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  public void doThrow(final JJJVMClass caller, final Object objectProvidedAsThrowable) throws Throwable {
+  public void doThrow(final JJJVMKlazz caller, final Object objectProvidedAsThrowable) throws Throwable {
     if (objectProvidedAsThrowable instanceof Throwable) {
       throw (Throwable) objectProvidedAsThrowable;
     }
@@ -382,7 +484,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  public void doMonitor(final JJJVMClass caller, final Object object, boolean lock) throws Throwable {
+  public void doMonitor(final JJJVMKlazz caller, final Object object, boolean lock) throws Throwable {
     if (object instanceof JJJVMObject) {
       final JJJVMObject jjjvmobj = (JJJVMObject) object;
       if (lock) {
@@ -402,24 +504,18 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  private static Class makeMultidimensionArrayClass(final Class klazz, final int dimensionNumber) {
+  protected static Class makeMultidimensionArrayClass(final Class klazz, final int dimensionNumber) {
     return Array.newInstance(klazz, new int[dimensionNumber]).getClass();
   }
 
-  private Class[] parseArgsFromMethodSignature(final String signature) throws Throwable {
+  protected Class[] parseArgsFromMethodSignature(final String signature) throws Throwable {
     final List<Class> resultList = new ArrayList<Class>();
-
     final StringBuilder klazzNameBuffer = new StringBuilder(16);
-
-    boolean started = false;
     boolean clazzName = false;
-
     int dimensions = 0;
 
     for (int i = 0; i < signature.length(); i++) {
-
       final char chr = signature.charAt(i);
-
       if (clazzName) {
         if (chr == ';') {
           clazzName = false;
@@ -443,11 +539,9 @@ public class JSEProviderImpl implements JJJVMProvider {
       else {
         switch (chr) {
           case '(':
-            started = true;
             dimensions = 0;
             break;
           case ')':
-            started = false;
             dimensions = 0;
             i = signature.length();
             break;

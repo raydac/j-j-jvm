@@ -39,7 +39,7 @@ public interface JJJVMProvider {
    * returned
    * @throws Throwable it will be thrown for problems or inside exceptions
    */
-  public Object invoke(JJJVMClass caller, Object instance, String jvmFormattedClassName, String methodName, String methodSignature, Object[] _arguments) throws Throwable;
+  public Object invoke(JJJVMKlazz caller, Object instance, String jvmFormattedClassName, String methodName, String methodSignature, Object[] _arguments) throws Throwable;
 
   /**
    * Allocate memory for new instance of a class.
@@ -52,7 +52,7 @@ public interface JJJVMProvider {
    * not be null
    * @throws Throwable it will be thrown for errors
    */
-  public Object allocate(JJJVMClass caller, String jvmFormattedClassName) throws Throwable;
+  public Object allocate(JJJVMKlazz caller, String jvmFormattedClassName) throws Throwable;
 
   /**
    * Create array of objects of defined class.
@@ -67,7 +67,7 @@ public interface JJJVMProvider {
    * cells, must not be null
    * @throws Throwable it will be thrown for errors
    */
-  public Object[] newObjectArray(JJJVMClass caller, String jvmFormattedClassName, int arrayLength) throws Throwable;
+  public Object[] newObjectArray(JJJVMKlazz caller, String jvmFormattedClassName, int arrayLength) throws Throwable;
 
   /**
    * Create multi-dimensional array of elements of defined class.
@@ -81,7 +81,7 @@ public interface JJJVMProvider {
    * @return generated multidimensional array as object, must not be null
    * @throws Throwable it will be thrown for errors
    */
-  public Object newMultidimensional(JJJVMClass caller, String jvmFormattedClassName, int[] arrayDimensions) throws Throwable;
+  public Object newMultidimensional(JJJVMKlazz caller, String jvmFormattedClassName, int[] arrayDimensions) throws Throwable;
 
   /**
    * Get value from a field of an object.
@@ -94,7 +94,7 @@ public interface JJJVMProvider {
    * @return the read object from the field
    * @throws Throwable it will be thrown for errors
    */
-  public Object get(JJJVMClass caller, Object obj, String fieldName, String fieldSignature) throws Throwable;
+  public Object get(JJJVMKlazz caller, Object obj, String fieldName, String fieldSignature) throws Throwable;
 
   /**
    * Write value into field of Object.
@@ -106,7 +106,7 @@ public interface JJJVMProvider {
    * @param fieldValue the value to be written into the field
    * @throws Throwable it will be thrown for errors
    */
-  public void set(JJJVMClass caller, Object obj, String fieldName, String fieldSignature, Object fieldValue) throws Throwable;
+  public void set(JJJVMKlazz caller, Object obj, String fieldName, String fieldSignature, Object fieldValue) throws Throwable;
 
   /**
    * Read value from a static field.
@@ -120,7 +120,7 @@ public interface JJJVMProvider {
    * @return the read value from the static field
    * @throws Throwable it will be thrown for errors
    */
-  public Object getStatic(JJJVMClass caller, String jvmFormattedClassName, String fieldName, String fieldSignature) throws Throwable;
+  public Object getStatic(JJJVMKlazz caller, String jvmFormattedClassName, String fieldName, String fieldSignature) throws Throwable;
 
   /**
    * Write value into a static field.
@@ -134,7 +134,7 @@ public interface JJJVMProvider {
    * @param value the value to be written into the static field
    * @throws Throwable it will be thrown for errors
    */
-  public void setStatic(JJJVMClass caller, String jvmFormattedClassName, String fieldName, String fieldSignature, Object value) throws Throwable;
+  public void setStatic(JJJVMKlazz caller, String jvmFormattedClassName, String fieldName, String fieldSignature, Object value) throws Throwable;
 
   /**
    * Check that object can be casted to class.
@@ -147,7 +147,7 @@ public interface JJJVMProvider {
    * @return true if the object can be casted to the class, false otherwise
    * @throws Throwable it will be thrown for errors
    */
-  public boolean checkCast(JJJVMClass caller, String jvmFormattedClassName, Object objectToCheck) throws Throwable;
+  public boolean checkCast(JJJVMKlazz caller, String jvmFormattedClassName, Object objectToCheck) throws Throwable;
 
   /**
    * Throw a Throwable based on provided object.
@@ -155,7 +155,7 @@ public interface JJJVMProvider {
    * @param objectProvidedAsThrowable base object to be used for throwable object constructing
    * @throws Throwable the exception will be thrown, type of error will be based on the provided object
    */
-  public void doThrow(JJJVMClass caller, Object objectProvidedAsThrowable) throws Throwable;
+  public void doThrow(JJJVMKlazz caller, Object objectProvidedAsThrowable) throws Throwable;
 
   /**
    * Resolve class by its jvm formatted name.
@@ -182,7 +182,7 @@ public interface JJJVMProvider {
    * @param lock true if the object must be locked, false otherwise
    * @throws Throwable  it will be thrown for errors
    */
-  public void doMonitor(JJJVMClass caller, Object object, boolean lock) throws Throwable;
+  public void doMonitor(JJJVMKlazz caller, Object object, boolean lock) throws Throwable;
 
   /**
    * Resolve some inner class.
@@ -192,5 +192,5 @@ public interface JJJVMProvider {
    * @throws Throwable it will be thrown for errors
    * @see #resolveClass(java.lang.String) 
    */
-  public JJJVMClass resolveInnerClass(JJJVMClass caller, JJJVMInnerClassRecord innerClassRecord) throws Throwable;
+  public JJJVMKlazz resolveInnerClass(JJJVMKlazz caller, JJJVMInnerClassRecord innerClassRecord) throws Throwable;
 }

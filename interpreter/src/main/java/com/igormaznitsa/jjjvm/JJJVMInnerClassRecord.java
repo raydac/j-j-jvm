@@ -1,5 +1,6 @@
 package com.igormaznitsa.jjjvm;
 
+import com.igormaznitsa.jjjvm.impl.JJJVMClassImpl;
 import java.io.DataInputStream;
 import java.io.IOException;
 
@@ -11,7 +12,7 @@ public final class JJJVMInnerClassRecord {
   /**
    * The Declaring class.
    */
-  private final JJJVMClass declaringClass;
+  private final JJJVMKlazz declaringClass;
   /**
    * The Index in the declaring class constant pool of the inner class info.
    */
@@ -29,27 +30,31 @@ public final class JJJVMInnerClassRecord {
    */
   private final int flags;
   
-  JJJVMInnerClassRecord(final JJJVMClass declaring, final DataInputStream inStream) throws IOException {
+  public JJJVMInnerClassRecord(final JJJVMKlazz declaring, final int innerClassInfoIndex, final int outerClassInfoIndex, final int innerNameIndex, final int flags){
     this.declaringClass = declaring;
-    this.innerClassInfoIndex = inStream.readUnsignedShort();
-    this.outerClassInfoIndex = inStream.readUnsignedShort();
-    this.innerNameIndex = inStream.readUnsignedShort();
-    this.flags = inStream.readUnsignedShort();
+    this.innerClassInfoIndex = innerClassInfoIndex;
+    this.outerClassInfoIndex = outerClassInfoIndex;
+    this.innerNameIndex = innerNameIndex;
+    this.flags = flags;
+  }
+  
+  public JJJVMInnerClassRecord(final JJJVMKlazz declaring, final DataInputStream inStream) throws IOException {
+    this(declaring, inStream.readUnsignedShort(), inStream.readUnsignedShort(), inStream.readUnsignedShort(), inStream.readUnsignedShort());
   }
   
   public int getFlags(){
     return this.flags;
   }
   
-  public JJJVMConstantPool.Record getInnerClassInfo(){
-    return this.declaringClass.getConstantPool().get(this.innerClassInfoIndex);
+  public JJJVMCPRecord getInnerClassInfo(){
+    return this.declaringClass.getConstantPool().getItem(this.innerClassInfoIndex);
   }
   
-  public JJJVMConstantPool.Record getOuterClassInfo(){
-    return this.declaringClass.getConstantPool().get(this.outerClassInfoIndex);
+  public JJJVMCPRecord getOuterClassInfo(){
+    return this.declaringClass.getConstantPool().getItem(this.outerClassInfoIndex);
   }
   
   public String getName(){
-    return (String)this.declaringClass.getConstantPool().get(this.innerNameIndex).asObject();
+    return (String)this.declaringClass.getConstantPool().getItem(this.innerNameIndex).asObject();
   }
 }

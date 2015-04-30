@@ -48,12 +48,15 @@ public final class JJJVMCatchBlockDescriptor {
     return pcReg >= this.pcStart && pcReg <= this.pcEnd;
   }
 
-  JJJVMCatchBlockDescriptor(final JJJVMConstantPool constantPool, final DataInputStream inStream) throws IOException {
-    this.pcStart = inStream.readUnsignedShort();
-    this.pcEnd = inStream.readUnsignedShort();
-    this.codeAddress = inStream.readUnsignedShort();
-    final int exceptionClassIndex = inStream.readUnsignedShort();
-    this.jvmFormattedClassName =  exceptionClassIndex == 0 ? null : constantPool.get(exceptionClassIndex).asString();
+  public JJJVMCatchBlockDescriptor(final int pcStart, final int pcEnd, final int pcAddress,final String jvmFormattedClassName){
+    this.jvmFormattedClassName = jvmFormattedClassName;
+    this.pcStart = pcStart;
+    this.pcEnd = pcEnd;
+    this.codeAddress = pcAddress;
+  }
+  
+  public JJJVMCatchBlockDescriptor(final JJJVMConstantPool constantPool, final DataInputStream inStream) throws IOException {
+    this(inStream.readUnsignedShort(), inStream.readUnsignedShort(), inStream.readUnsignedShort(), constantPool.getItem(inStream.readUnsignedShort()).asString());
   }
   
 }

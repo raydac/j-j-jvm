@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.igormaznitsa.jjjvm;
+package com.igormaznitsa.jjjvm.impl;
 
+import com.igormaznitsa.JJJVMField;
+import com.igormaznitsa.jjjvm.JJJVMKlazz;
+import com.igormaznitsa.jjjvm.JJJVMObject;
 import java.io.DataInputStream;
 import java.io.IOException;
 
@@ -22,22 +25,9 @@ import java.io.IOException;
  * Describes a class field.
  * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.5}
  */
-public final class JJJVMClassField {
+public final class JJJVMClassFieldImpl implements JJJVMField {
 
-  public static final int ACC_PUBLIC = 0x0001;
-  public static final int ACC_PRIVATE = 0x0002;
-  public static final int ACC_PROTECTED = 0x0004;
-  public static final int ACC_STATIC = 0x0008;
-  public static final int ACC_FINAL = 0x0010;
-  public static final int ACC_VOLATILE = 0x0040;
-  public static final int ACC_TRANSIENT = 0x0080;
-  public static final int ACC_SYNTHETIC = 0x1000;
-  public static final int ACC_ENUM = 0x4000;
-
-  //---------------------------
-  private static final String ATTRIBUTE_CONSTANTVALUE = "ConstantValue";
-  //---------------------------
-  private final JJJVMClass declaringClass;
+  private final JJJVMClassImpl declaringClass;
   private final int flags;
   private final String name;
   private final String signature;
@@ -78,7 +68,7 @@ public final class JJJVMClassField {
     }
   }
 
-  JJJVMClassField(final JJJVMClass declaringClass, final DataInputStream inStream) throws IOException {
+  JJJVMClassFieldImpl(final JJJVMClassImpl declaringClass, final DataInputStream inStream) throws IOException {
     this.declaringClass = declaringClass;
     int theConstantValueIndex = -1;
     this.staticValue = null;
@@ -86,15 +76,15 @@ public final class JJJVMClassField {
     this.flags = inStream.readUnsignedShort();
     // name
     final int nameIndex = inStream.readUnsignedShort();
-    this.name = (String) declaringClass.getConstantPool().get(nameIndex).asString();
+    this.name = (String) declaringClass.getConstantPool().getItem(nameIndex).asString();
     // type
     final int typeIndex = inStream.readUnsignedShort();
-    this.signature = (String) declaringClass.getConstantPool().get(typeIndex).asString();
+    this.signature = (String) declaringClass.getConstantPool().getItem(typeIndex).asString();
     this.fieldUID = (nameIndex << 16) | typeIndex;
     // attributes
     int attributesCounter = inStream.readUnsignedShort();
     while (--attributesCounter >= 0) {
-      final String attrName = (String) declaringClass.getConstantPool().get(inStream.readUnsignedShort()).asString();
+      final String attrName = (String) declaringClass.getConstantPool().getItem(inStream.readUnsignedShort()).asString();
       if (ATTRIBUTE_CONSTANTVALUE.equals(attrName)) {
         final int attributeSize = inStream.readInt();
         if (attributeSize != 2) {
@@ -140,7 +130,11 @@ public final class JJJVMClassField {
     if (this.constantIndexInPool <= 0) {
       return null;
     }
-    return this.declaringClass.getConstantPool().get(this.constantIndexInPool).asObject();
+    return this.declaringClass.getConstantPool().getItem(this.constantIndexInPool).asObject();
+  }
+
+  public JJJVMKlazz getDeclaringClass() {
+    return this.declaringClass;
   }
 
   public int getFlags() {

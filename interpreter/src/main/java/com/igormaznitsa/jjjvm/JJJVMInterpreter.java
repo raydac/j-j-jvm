@@ -1,521 +1,18 @@
-/* 
- * Copyright 2015 Igor Maznitsa (http://www.igormaznitsa.com).
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.igormaznitsa.jjjvm;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import com.igormaznitsa.JJJVMField;
+import com.igormaznitsa.jjjvm.impl.JJJVMClassMethodImpl;
 import java.lang.reflect.Array;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * Contains class parser and JVM byte-code interpreter.
- * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html}
- *
- * @see JJJVMProvider
- * @see JJJVMConstantPool
- * @see JJJVMClassMethod
- * @see JJJVMClassField
- * @see JJJVMObject
- */
-public final class JJJVMClass {
-
-  //-----------------------------
-  public static final int ACC_PUBLIC = 0x0001;
-  public static final int ACC_FINAL = 0x0010;
-  public static final int ACC_SUPER = 0x0020;
-  public static final int ACC_INTERFACE = 0x0200;
-  public static final int ACC_ABSTRACT = 0x0400;
-  public static final int ACC_SYNTHETIC = 0x1000;
-  public static final int ACC_ANNOTATION = 0x2000;
-  public static final int ACC_ENUM = 0x4000;
-  //-----------------------------
-  private static final String ATTR_INNERCLASSES = "InnerClasses";
-  private static final String ATTR_SOURCEFILE = "SourceFile";
-  //-----------------------------
-  private final int classFileFormatVersion;
-  private final int classAccessFlags;
-  private final int classNameIndex;
-  private final int superClassNameIndex;
-  private final String[] implementedInterfaces;
-  private final Map<String, JJJVMClassField> declaredFields;
-  private final Map<String, JJJVMClassMethod> declaredMethods;
-  private final JJJVMProvider provider;
-  private final JJJVMConstantPool constantPool;
-  private final JJJVMInnerClassRecord[] innerClasses;
-  private final String sourceFile;
-
+public abstract class JJJVMInterpreter {
   private static final Map<String, Integer> argNumberMap = new HashMap<String, Integer>();
-  private static final Map<String, String> loadingClasses = new ConcurrentHashMap<String, String>();
-
-  // constructor for test purposes
-  JJJVMClass() {
-    this.classFileFormatVersion = 0;
-    this.classAccessFlags = 0;
-    this.classNameIndex = 0;
-    this.superClassNameIndex = 0;
-    this.implementedInterfaces = null;
-    this.provider = null;
-    this.constantPool = null;
-    this.declaredMethods = null;
-    this.declaredFields = null;
-    this.innerClasses = null;
-    this.sourceFile = null;
-  }
-
-  /**
-   * It parses and create instance of class which represented by input stream.
-   *
-   * @param inStream stream contains array describing a compiled java class,
-   * must not be null
-   * @param provider a provider which implements misc service methods to process
-   * byte code and resolve classes, must not be null
-   * @throws Throwable it will be thrown for errors
-   */
-  public JJJVMClass(final InputStream inStream, final JJJVMProvider provider) throws Throwable {
-    if (provider == null) {
-      throw new NullPointerException("External processor must be provided");
-    }
-    if (inStream == null) {
-      throw new NullPointerException("Input stream must be provided");
-    }
-
-    this.provider = provider;
-
-    final DataInputStream readStr = inStream instanceof DataInputStream ? (DataInputStream) inStream : new DataInputStream(inStream);
-
-    if (readStr.readInt() != 0xCAFEBABE) {
-      throw new IOException("Not Java class");
-    }
-    this.classFileFormatVersion = readStr.readInt();
-    this.constantPool = new JJJVMConstantPool(this, readStr);
-    this.classAccessFlags = readStr.readUnsignedShort();
-    this.classNameIndex = readStr.readUnsignedShort();
-
-    loadingClasses.put(this.getClassName(), this.getClassName());
-
-    try {
-      this.superClassNameIndex = readStr.readUnsignedShort();
-      final int numberOfInterfaces = readStr.readUnsignedShort();
-      this.implementedInterfaces = new String[numberOfInterfaces];
-      for (int i = 0; i < numberOfInterfaces; i++) {
-        final String interfaceClassName = this.constantPool.get(readStr.readUnsignedShort()).asString();
-        this.implementedInterfaces[i] = interfaceClassName;
-        this.provider.resolveClass(interfaceClassName);
-      }
-      this.declaredFields = loadFields(readStr);
-      this.declaredMethods = loadMethods(readStr);
-
-      JJJVMInnerClassRecord[] detectedInnerClassess = null;
-      String sourceFileName = null;
-      int classAttributeNumber = readStr.readUnsignedShort();
-      while (--classAttributeNumber >= 0) {
-        final int nameIndex = readStr.readUnsignedShort();
-        final int dataSize = readStr.readInt();
-        final String attrName = this.constantPool.get(nameIndex).asString();
-        if (ATTR_INNERCLASSES.equals(attrName)) {
-          detectedInnerClassess = readInnerClasses(readStr);
-        }
-        else if (ATTR_SOURCEFILE.equals(attrName)) {
-          sourceFileName = this.constantPool.get(readStr.readUnsignedShort()).asString();
-        }
-        else {
-          readStr.skipBytes(dataSize);
-        }
-      }
-      this.sourceFile = sourceFileName;
-      this.innerClasses = detectedInnerClassess == null ? new JJJVMInnerClassRecord[0] : detectedInnerClassess;
-
-      final JJJVMClassMethod clinitMethod = findMethod("<clinit>", "()V");
-      if (clinitMethod != null) {
-        try {
-          invoke(null, clinitMethod, null, null, null);
-        }
-        catch (Throwable thr) {
-          throw new IOException("Error during <clinit>");
-        }
-      }
-
-      this.provider.registerExternalClass(this.getClassName(), this);
-    }
-    finally {
-      loadingClasses.remove(getClassName());
-    }
-  }
-
-  /**
-   * Get the source file name for the class.
-   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.10}
-   *
-   * @return the found source name or null if there was not any definition.
-   */
-  public String getSourceFile() {
-    return this.sourceFile;
-  }
-
-  private JJJVMInnerClassRecord[] readInnerClasses(final DataInputStream inStream) throws Throwable {
-    int numberOfClassess = inStream.readUnsignedShort();
-    final JJJVMInnerClassRecord[] result = new JJJVMInnerClassRecord[numberOfClassess];
-    for (int i = 0; i < numberOfClassess; i++) {
-      final JJJVMInnerClassRecord record = new JJJVMInnerClassRecord(this, inStream);
-      result[i] = record;
-      if (isClassLoading(record.getInnerClassInfo().asString())) {
-        continue;
-      }
-      this.provider.resolveInnerClass(this, record);
-    }
-
-    return result;
-  }
-
-  /**
-   * Check, is the class still in loading mode.
-   *
-   * @param jvmFormattedClassName class name to check, must not be null
-   * @return true if the class with the name is still in the loading list, false
-   * otherwise
-   */
-  public static boolean isClassLoading(final String jvmFormattedClassName) {
-    return loadingClasses.containsKey(jvmFormattedClassName);
-  }
-
-  /**
-   * Get number of currently loading classes.
-   *
-   * @return number of currently loading classes.
-   */
-  public static int getNumberOfLoadingClasses() {
-    return loadingClasses.size();
-  }
-
-  /**
-   * Get records describing inner classes of the class.
-   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.6}
-   *
-   * @return array of the inner class records, must not be null
-   */
-  public JJJVMInnerClassRecord[] getInnerClassRecords() {
-    return this.innerClasses;
-  }
-
-  /**
-   * Get the name of the superclass.
-   *
-   * @return the superclass jvm formatted name, must not be null
-   */
-  public String getSuperclassName() {
-    return this.constantPool.get(this.superClassNameIndex).asString();
-  }
-
-  /**
-   * Resolve and return object representing superclass.
-   *
-   * @return object represents superclass, must not be null
-   * @throws Throwable it will be thrown if impossible to resolve class or some
-   * errors
-   */
-  public Object resolveSuperclass() throws Throwable {
-    return this.provider.resolveClass(getSuperclassName());
-  }
-
-  /**
-   * Get array contains jvm formatted names of interfaces implemented by the
-   * class.
-   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.1}
-   *
-   * @return array contains names of interfaces, must not be null
-   */
-  public String[] getInterfaces() {
-    return this.implementedInterfaces;
-  }
-
-  /**
-   * Get jvm formatted class name.
-   *
-   * @return class name in jvm format like "java/lang/Object$1"
-   */
-  public String getClassName() {
-    return this.constantPool.get(this.classNameIndex).asString();
-  }
-
-  /**
-   * Get name in normal format.
-   *
-   * @return class name in normal format like "java.lang.Object$1"
-   */
-  public String getName() {
-    return normalizeClassName(getClassName());
-  }
-
-  /**
-   * Get name in canonical format.
-   *
-   * @return class name in canonical format like "java.lang.Object.1"
-   */
-  public String getCanonicalName() {
-    return getName().replace('$', '.');
-  }
-
-  /**
-   * Get class format version.
-   *
-   * @return the class format version
-   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.1}
-   */
-  public int getClassFormatVersion() {
-    return this.classFileFormatVersion;
-  }
-
-  /**
-   * Get the constant pool of the class
-   * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4}
-   *
-   * @return the constant pool of the class, must not be null
-   */
-  public JJJVMConstantPool getConstantPool() {
-    return this.constantPool;
-  }
-
-  private static boolean isCategory2(final Object obj) {
-    return obj instanceof Double || obj instanceof Long;
-  }
-
-  private static String makeMethodUID(final String methodName, final String methodSignature) {
-    return methodName + '.' + methodSignature;
-  }
-
-  private Map<String, JJJVMClassMethod> loadMethods(final DataInputStream inStream) throws IOException {
-    final int numberOfMethods = inStream.readUnsignedShort();
-    final Map<String, JJJVMClassMethod> result = new HashMap<String, JJJVMClassMethod>(numberOfMethods);
-    for (int i = 0; i < numberOfMethods; i++) {
-      final JJJVMClassMethod newMethod = new JJJVMClassMethod(this, inStream);
-      result.put(makeMethodUID(newMethod.getName(), newMethod.getSignature()), newMethod);
-    }
-    return result;
-  }
-
-  private Map<String, JJJVMClassField> loadFields(final DataInputStream inStream) throws Throwable {
-    final int numberOfFields = inStream.readUnsignedShort();
-    final Map<String, JJJVMClassField> result = new HashMap<String, JJJVMClassField>(numberOfFields);
-    for (int i = 0; i < numberOfFields; i++) {
-      final JJJVMClassField newField = new JJJVMClassField(this, inStream);
-      result.put(newField.getName(), newField);
-    }
-    return result;
-  }
-
-  static void skipAllAttributesInStream(final DataInputStream inStream) throws IOException {
-    int numberOfAttributes = inStream.readUnsignedShort();
-    while (--numberOfAttributes >= 0) {
-      // skip name
-      inStream.skipBytes(2);
-      //skip data
-      inStream.skipBytes(inStream.readInt());
-    }
-  }
-
-  /**
-   * Normalize a class name from jvm formatted form to normal form.
-   *
-   * @param jvmFormattedClassName jvm formatted name to be normalized, must not
-   * be null
-   * @return normalized name, for instance "java/lang/Object" becomes
-   * "java.lang.Object"
-   */
-  public static String normalizeClassName(final String jvmFormattedClassName) {
-    return jvmFormattedClassName.replace('/', '.');
-  }
-
-  /**
-   * Check is it possoble or to to cast the class to class defined by its name.
-   *
-   * @param jvmFormattedClassName name of the target class, must not be null
-   * @return true if the class can be casted to the target class, false
-   * otherwise
-   * @throws Throwable it will be thrown for errors
-   */
-  public boolean tryCastTo(final String jvmFormattedClassName) throws Throwable {
-    final boolean result;
-    if ("java/lang/Object".equals(jvmFormattedClassName)) {
-      result = true;
-    }
-    else {
-      result = findClassForNameInHierarchy(this, jvmFormattedClassName) != null;
-    }
-    return result;
-  }
-
-  /**
-   * Make search among ancestors and interfaces of a class for a class defined
-   * by its normalized name
-   *
-   * @param klazz a class which ancestors will be used for search, it can be
-   * null
-   * @param normalClassName normalized class name of target class, must not be
-   * null
-   * @return object of found class or null if not found or the root class is
-   * null
-   * @throws Throwable it will be thrown for error
-   */
-  public static Class findClassForNameInHierarchy(final Class klazz, final String normalClassName) throws Throwable {
-    if (klazz == null) {
-      return null;
-    }
-    if ("java.lang.Object".equals(normalClassName)) {
-      return java.lang.Object.class;
-    }
-
-    if (klazz.getName().equals(normalClassName)) {
-      return klazz;
-    }
-    for (final Class interfaceClass : klazz.getInterfaces()) {
-      final Class obj = findClassForNameInHierarchy(interfaceClass, normalClassName);
-      if (obj != null) {
-        return obj;
-      }
-    }
-    return findClassForNameInHierarchy(klazz.getSuperclass(), normalClassName);
-  }
-
-  /**
-   * Make search among ancestors and interfaces of a JJJVMClass for a class
-   * defined by its jvm formatted name.
-   *
-   * @param klazz a class which ancestors will be used for search, it can be
-   * null
-   * @param jvmFormattedClassName jvm formatted class name name of target class,
-   * must not be null
-   * @return object of found class or null if not found or the root class is
-   * null
-   * @throws Throwable it will be thrown for error
-   */
-  public static Object findClassForNameInHierarchy(final JJJVMClass klazz, final String jvmFormattedClassName) throws Throwable {
-    if (klazz == null) {
-      return false;
-    }
-    if ("java/lang/Object".equals(jvmFormattedClassName)) {
-      return java.lang.Object.class;
-    }
-    if (jvmFormattedClassName.equals(klazz.getClassName())) {
-      return klazz;
-    }
-
-    final String normalizedName = normalizeClassName(jvmFormattedClassName);
-
-    for (final String inter : klazz.getInterfaces()) {
-      if (inter.equals(jvmFormattedClassName)) {
-        return true;
-      }
-      final Object resolvedClass = klazz.provider.resolveClass(jvmFormattedClassName);
-      final Object detected;
-      if (resolvedClass instanceof JJJVMClass) {
-        detected = findClassForNameInHierarchy((JJJVMClass) resolvedClass, jvmFormattedClassName);
-      }
-      else {
-        detected = findClassForNameInHierarchy((Class) resolvedClass, jvmFormattedClassName);
-      }
-      if (detected != null) {
-        return detected;
-      }
-    }
-
-    final Object superKlazz = klazz.resolveSuperclass();
-    if (superKlazz instanceof JJJVMClass) {
-      return findClassForNameInHierarchy((JJJVMClass) superKlazz, jvmFormattedClassName);
-    }
-    else {
-      return findClassForNameInHierarchy((Class) superKlazz, normalizedName);
-    }
-  }
-
-  /**
-   * Find for field in the class and its ancestors.
-   *
-   * @param fieldName the fied name, must not be null
-   * @return found field object or null if the field has not been found
-   * @throws Throwable it will be thrown for errors
-   */
-  public final JJJVMClassField findField(final String fieldName) throws Throwable {
-    JJJVMClassField result = findDeclaredField(fieldName);
-    if (result == null) {
-      for (final String inter : this.implementedInterfaces) {
-        final Object resolvedClass = this.provider.resolveClass(inter);
-        if (resolvedClass != null && resolvedClass instanceof JJJVMClass) {
-          result = ((JJJVMClass) resolvedClass).findField(fieldName);
-          if (result != null) {
-            break;
-          }
-        }
-      }
-
-      if (result == null) {
-        final Object resolvedClass = this.resolveSuperclass();
-        if (resolvedClass != null && resolvedClass instanceof JJJVMClass) {
-          result = ((JJJVMClass) resolvedClass).findField(fieldName);
-        }
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Find for field defined only in the class.
-   *
-   * @param fieldName the fied name, must not be null
-   * @return found field object or null if the field has not been found
-   */
-  public final JJJVMClassField findDeclaredField(final String fieldName) {
-    return this.declaredFields.get(fieldName);
-  }
-
-  /**
-   * Find for method defined by the class or in its ancestors.
-   *
-   * @param methodName the method name, must not be null
-   * @param methodSignature the method signature, must not be null
-   * @return found method object or null if not found
-   * @throws Throwable it will be thrown for errors
-   */
-  public final JJJVMClassMethod findMethod(final String methodName, final String methodSignature) throws Throwable {
-    JJJVMClassMethod result = findDeclaredMethod(methodName, methodSignature);
-    if (result == null) {
-      final Object resolvedClass = this.resolveSuperclass();
-      if (resolvedClass != null && resolvedClass instanceof JJJVMClass) {
-        result = ((JJJVMClass) resolvedClass).findMethod(methodName, methodSignature);
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Find for method declared only in the class.
-   *
-   * @param methodName the method name, must not be null
-   * @param methodSignature the method signature, must not be null
-   * @return found method object or null if not found
-   */
-  public final JJJVMClassMethod findDeclaredMethod(final String methodName, final String methodSignature) {
-    return this.declaredMethods.get(makeMethodUID(methodName, methodSignature));
-  }
 
   /**
    * Invoke a method.
    *
+   * @param caller 
    * @param instance the 'this' object or null for static methods
    * @param methodToInvoke the method to invoke, must not be null
    * @param args array contains arguments for method, can be null for method
@@ -528,17 +25,17 @@ public final class JJJVMClass {
    * @return result of invocation, null for void method
    * @throws Throwable it will be thrown for errors
    */
-  public Object invoke(final JJJVMObject instance, final JJJVMClassMethod methodToInvoke, final Object[] args, final Object[] stack, final Object[] vars) throws Throwable {
+  public static Object invoke(final JJJVMKlazz caller, final JJJVMObject instance, final JJJVMMethod methodToInvoke, final Object[] args, final Object[] stack, final Object[] vars) throws Throwable {
     // implementation of synchronization mechanism
     final int methodFlags = methodToInvoke.getFlags();
-    if ((methodFlags & JJJVMClassMethod.ACC_SYNCHRONIZED) != 0) {
+    if ((methodFlags & JJJVMClassMethodImpl.ACC_SYNCHRONIZED) != 0) {
       // it's a synchronized method
       final Object syncObject;
 
-      if ((methodFlags & JJJVMClassMethod.ACC_STATIC) != 0) {
+      if ((methodFlags & JJJVMClassMethodImpl.ACC_STATIC) != 0) {
         // it's a static method
         // we need to use class as the synchro object
-        syncObject = this;
+        syncObject = methodToInvoke;
       }
       else {
         // it's a nonstatic method
@@ -547,17 +44,17 @@ public final class JJJVMClass {
       }
 
       synchronized (syncObject) {
-        return _invoke(instance, methodToInvoke, args, 0, stack, vars);
+        return _invoke(caller, instance, methodToInvoke, args, 0, stack, vars);
       }
     }
     else {
       // it's not a synchronized method and we just call inside invoke function
-      return _invoke(instance, methodToInvoke, args, 0, stack, vars);
+      return _invoke(caller, instance, methodToInvoke, args, 0, stack, vars);
     }
   }
 
   // the Heart of the interpreter, it processes byte-code of method {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.3}
-  private Object _invoke(final JJJVMObject instance, final JJJVMClassMethod method, final Object[] args, final int initialStackOffset, final Object[] stack, final Object[] vars) throws Throwable {
+  private static Object _invoke(final JJJVMKlazz caller, final JJJVMObject instance, final JJJVMMethod method, final Object[] args, final int initialStackOffset, final Object[] stack, final Object[] vars) throws Throwable {
     final Object[] localVars = vars == null || vars.length < method.getMaxLocals() ? new Object[method.getMaxLocals()] : vars;
 
     final Object[] localMethodStack;
@@ -585,20 +82,21 @@ public final class JJJVMClass {
     final int flags = method.getFlags();
 
     // check the method flags
-    if ((flags & (JJJVMClassMethod.ACC_ABSTRACT | JJJVMClassMethod.ACC_STRICT)) != 0) {
+    if ((flags & (JJJVMClassMethodImpl.ACC_ABSTRACT | JJJVMClassMethodImpl.ACC_STRICT)) != 0) {
       // decoding
-      if ((flags & JJJVMClassMethod.ACC_ABSTRACT) != 0) {
+      if ((flags & JJJVMClassMethodImpl.ACC_ABSTRACT) != 0) {
         throw new IllegalStateException("It's an abstract method");
       }
-      if ((flags & JJJVMClassMethod.ACC_STRICT) != 0) {
+      if ((flags & JJJVMClassMethodImpl.ACC_STRICT) != 0) {
         throw new IllegalStateException("Strict methods not supported");
       }
     }
 
-    final JJJVMConstantPool cpool = this.constantPool;
-
+    final JJJVMConstantPool cpool = caller.getConstantPool();
+    final JJJVMProvider provider = caller.getProvider();
+    
     // if the method is not static, we will need to place "this" in the zero-indexed local variable
-    if ((flags & JJJVMClassMethod.ACC_STATIC) == 0) {
+    if ((flags & JJJVMClassMethodImpl.ACC_STATIC) == 0) {
       // place "this"
       localVars[0] = instance;
       // the first argument will be at the index 1
@@ -703,28 +201,28 @@ public final class JJJVMClass {
               index = (index << 8) | (methodBytecodes[regPC++] & 0xFF);
             }
 
-            final JJJVMConstantPool.Record record = cpool.get(index);
+            final JJJVMCPRecord record = cpool.getItem(index);
             switch (record.getType()) {
-              case JJJVMConstantPool.Record.CONSTANT_INTEGER:
-              case JJJVMConstantPool.Record.CONSTANT_FLOAT: {
+              case JJJVMCPRecord.CONSTANT_INTEGER:
+              case JJJVMCPRecord.CONSTANT_FLOAT: {
                 localMethodStack[regSP++] = record.getValue();
               }
               break;
-              case JJJVMConstantPool.Record.CONSTANT_STRING: {
+              case JJJVMCPRecord.CONSTANT_STRING: {
                 localMethodStack[regSP++] = record.asString();
               }
               break;
-              case JJJVMConstantPool.Record.CONSTANT_CLASSREF: {
+              case JJJVMCPRecord.CONSTANT_CLASSREF: {
                 final String jvmFormattedClassName = record.getClassName();
-                final Object clazz = this.provider.resolveClass(jvmFormattedClassName);
+                final Object clazz = provider.resolveClass(jvmFormattedClassName);
                 if (clazz == null) {
                   throw new IllegalArgumentException("Can't resolve class [" + jvmFormattedClassName + ']');
                 }
                 localMethodStack[regSP++] = clazz;
               }
               break;
-              case JJJVMConstantPool.Record.CONSTANT_METHODTYPE:
-              case JJJVMConstantPool.Record.CONSTANT_METHODHANDLE:
+              case JJJVMCPRecord.CONSTANT_METHODTYPE:
+              case JJJVMCPRecord.CONSTANT_METHODHANDLE:
                 throw new UnsupportedOperationException("Method type and Method handle is not supported");
               default:
                 throw new Error("Unsupported constant type for LDC [" + record.getType() + ']');
@@ -736,10 +234,10 @@ public final class JJJVMClass {
             final int index = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
 
-            final JJJVMConstantPool.Record record = cpool.get(index);
+            final JJJVMCPRecord record = cpool.getItem(index);
             switch (record.getType()) {
-              case JJJVMConstantPool.Record.CONSTANT_DOUBLE:
-              case JJJVMConstantPool.Record.CONSTANT_LONG: {
+              case JJJVMCPRecord.CONSTANT_DOUBLE:
+              case JJJVMCPRecord.CONSTANT_LONG: {
                 localMethodStack[regSP++] = null;
               }
               break;
@@ -1760,17 +1258,17 @@ public final class JJJVMClass {
           {
             final int poolIndex = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
-            final JJJVMConstantPool.Record fieldRef = cpool.get(poolIndex);
+            final JJJVMCPRecord fieldRef = cpool.getItem(poolIndex);
 
             final String className = fieldRef.getClassName();
             final String fieldName = fieldRef.getName();
             final String fieldSignature = fieldRef.getSignature();
-            final Object resolvedClass = className.equals(this.getClassName()) ? this : this.provider.resolveClass(className);
+            final Object resolvedClass = className.equals(caller.getClassName()) ? caller : provider.resolveClass(className);
             final Object value;
 
-            if (resolvedClass instanceof JJJVMClass) {
-              final JJJVMClass theclass = (JJJVMClass) resolvedClass;
-              final JJJVMClassField thefield = theclass.findField(fieldName);
+            if (resolvedClass instanceof JJJVMKlazz) {
+              final JJJVMKlazz theclass = (JJJVMKlazz) resolvedClass;
+              final JJJVMField thefield = theclass.findField(fieldName);
               if (instruction == 178) {
                 value = thefield.getStaticValue();
                 if (isCategory2(value)) {
@@ -1784,7 +1282,7 @@ public final class JJJVMClass {
             }
             else {
               if (instruction == 178) {
-                value = this.provider.getStatic(this, className, fieldName, fieldSignature);
+                value = provider.getStatic(caller, className, fieldName, fieldSignature);
                 if (isCategory2(value)) {
                   localMethodStack[regSP++] = null;
                 }
@@ -1792,7 +1290,7 @@ public final class JJJVMClass {
               }
               else {
                 value = localMethodStack[--regSP];
-                provider.setStatic(this, className, fieldName, fieldSignature, value);
+                provider.setStatic(caller, className, fieldName, fieldSignature, value);
               }
             }
           }
@@ -1803,7 +1301,7 @@ public final class JJJVMClass {
             final int poolIndex = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
 
-            final JJJVMConstantPool.Record fieldRef = cpool.get(poolIndex);
+            final JJJVMCPRecord fieldRef = cpool.getItem(poolIndex);
             final String fieldName = fieldRef.getName();
 
             if (instruction == 180) {
@@ -1819,7 +1317,7 @@ public final class JJJVMClass {
               }
               else {
                 final String fieldSignature = fieldRef.getSignature();
-                localMethodStack[regSP++] = this.provider.get(this, value, fieldName, fieldSignature);
+                localMethodStack[regSP++] = provider.get(caller, value, fieldName, fieldSignature);
               }
             }
             else {
@@ -1838,7 +1336,7 @@ public final class JJJVMClass {
               }
               else {
                 final String fieldSignature = fieldRef.getSignature();
-                this.provider.set(this, objectINstance, fieldName, fieldSignature, value);
+                provider.set(caller, objectINstance, fieldName, fieldSignature, value);
               }
             }
 
@@ -1852,7 +1350,7 @@ public final class JJJVMClass {
             final int methodRef = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
 
-            final JJJVMConstantPool.Record record = cpool.get(methodRef);
+            final JJJVMCPRecord record = cpool.getItem(methodRef);
 
             int argsNumber = extractArgsNumber(record.getSignature());
 
@@ -1881,24 +1379,24 @@ public final class JJJVMClass {
               final Object resolvedKlazz;
               if (instruction == 185) {
                 // INOKEINTERFACE
-                resolvedKlazz = objInstance instanceof JJJVMObject ? ((JJJVMObject) objInstance).getKlazz() : this.provider.resolveClass(objInstance.getClass().getName().replace('.', '/'));
+                resolvedKlazz = objInstance instanceof JJJVMObject ? ((JJJVMObject) objInstance).getKlazz() : provider.resolveClass(objInstance.getClass().getName().replace('.', '/'));
               }
               else {
-                resolvedKlazz = klazzName.equals(this.getClassName()) ? this : this.provider.resolveClass(klazzName);
+                resolvedKlazz = klazzName.equals(caller.getClassName()) ? caller: provider.resolveClass(klazzName);
               }
               Object result = null;
-              if (resolvedKlazz instanceof JJJVMClass) {
-                final JJJVMClassMethod foundMethod = ((JJJVMClass) resolvedKlazz).findMethod(methodName, signature);
-                final JJJVMClass jjjvmclazz = foundMethod.getDeclaringClass();
-                if (jjjvmclazz == this) {
-                  result = jjjvmclazz._invoke((JJJVMObject) objInstance, foundMethod, argsArray, regSP, localMethodStack, null);
+              if (resolvedKlazz instanceof JJJVMKlazz) {
+                final JJJVMMethod foundMethod = ((JJJVMKlazz) resolvedKlazz).findMethod(methodName, signature);
+                final JJJVMKlazz jjjvmclazz = foundMethod.getDeclaringClass();
+                if (jjjvmclazz == caller) {
+                  result = _invoke(caller,(JJJVMObject) objInstance, foundMethod, argsArray, regSP, localMethodStack, null);
                 }
                 else {
-                  result = jjjvmclazz.invoke((JJJVMObject) objInstance, foundMethod, argsArray, null, null);
+                  result = invoke(jjjvmclazz, (JJJVMObject) objInstance, foundMethod, argsArray, null, null);
                 }
               }
               else {
-                result = this.provider.invoke(this, objInstance, klazzName, methodName, signature, argsArray);
+                result = provider.invoke(caller, objInstance, klazzName, methodName, signature, argsArray);
                 if (result != null && "<init>".equals(methodName)) {
                   // replace all instances by new one
                   for (int i = 0; i < localMethodStack.length; i++) {
@@ -1909,7 +1407,7 @@ public final class JJJVMClass {
                 }
               }
 
-              if (signature.charAt(signature.length() - 1) != JJJVMClassMethod.TYPE_VOID) {
+              if (signature.charAt(signature.length() - 1) != JJJVMClassMethodImpl.TYPE_VOID) {
                 localMethodStack[regSP++] = result;
               }
             }
@@ -1923,7 +1421,7 @@ public final class JJJVMClass {
           {
             final int classRef = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
-            localMethodStack[regSP++] = this.provider.allocate(this, cpool.get(classRef).asString());
+            localMethodStack[regSP++] = provider.allocate(caller, cpool.getItem(classRef).asString());
           }
           break;
           case 188: // NEWARRAY
@@ -1988,8 +1486,8 @@ public final class JJJVMClass {
             regPC += 2;
 
             final int count = ((Integer) localMethodStack[--regSP]);
-            final String className = cpool.get(index).getClassName();
-            final Object[] objArray = this.provider.newObjectArray(this, className, count);
+            final String className = cpool.getItem(index).getClassName();
+            final Object[] objArray = provider.newObjectArray(caller, className, count);
 
             localMethodStack[regSP++] = objArray;
           }
@@ -2010,7 +1508,7 @@ public final class JJJVMClass {
               throw (Throwable) throwable;
             }
             else {
-              this.provider.doThrow(this, throwable);
+              provider.doThrow(caller, throwable);
             }
           }
           break;
@@ -2019,13 +1517,13 @@ public final class JJJVMClass {
           {
             final int cpIndex = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
-            final String rawClassName = cpool.get(cpIndex).getClassName();
+            final String rawClassName = cpool.getItem(cpIndex).getClassName();
             final int index = regSP - 1;
             final Object object = localMethodStack[index];
 
             if (instruction == 192) {
               if (object != null) {
-                if (!this.provider.checkCast(this, rawClassName, object)) {
+                if (!provider.checkCast(caller, rawClassName, object)) {
                   throw new ClassCastException(object.getClass().getName() + " -> " + rawClassName);
                 }
               }
@@ -2035,7 +1533,7 @@ public final class JJJVMClass {
                 localMethodStack[index] = 0;
               }
               else {
-                localMethodStack[index] = this.provider.checkCast(this, rawClassName, object) ? 1 : 0;
+                localMethodStack[index] = provider.checkCast(caller, rawClassName, object) ? 1 : 0;
               }
             }
           }
@@ -2051,7 +1549,7 @@ public final class JJJVMClass {
               ((JJJVMObject) obj).lock();
             }
             else {
-              this.provider.doMonitor(this, obj, true);
+              provider.doMonitor(caller, obj, true);
             }
           }
           break;
@@ -2066,7 +1564,7 @@ public final class JJJVMClass {
               ((JJJVMObject) obj).unlock();
             }
             else {
-              this.provider.doMonitor(this, obj, false);
+              provider.doMonitor(caller, obj, false);
             }
           }
           break;
@@ -2088,7 +1586,7 @@ public final class JJJVMClass {
               localMethodStack[--regSP] = null;
             }
 
-            localMethodStack[regSP++] = provider.newMultidimensional(this, cpool.get(classRefIndex).asString(), dimensions);
+            localMethodStack[regSP++] = provider.newMultidimensional(caller, cpool.getItem(classRefIndex).asString(), dimensions);
           }
           break;
           case 198: // IFNULL
@@ -2128,7 +1626,7 @@ public final class JJJVMClass {
               break;
             }
 
-            if (this.provider.checkCast(this, exceptionClassName, thr)) {
+            if (provider.checkCast(caller, exceptionClassName, thr)) {
               record = r;
               break;
             }
@@ -2206,132 +1704,7 @@ public final class JJJVMClass {
     return (short) ((b0 << 8) | b1);
   }
 
-  /**
-   * Create new instance of the class.
-   *
-   * @param invokeDefaultConstructor true if to call the default constructor for
-   * the new instance, false if just allocated object
-   * @return new object of the class, must not be null
-   * @throws Throwable it will be thrown for errors
-   */
-  public JJJVMObject newInstance(final boolean invokeDefaultConstructor) throws Throwable {
-    final JJJVMObject result = new JJJVMObject(this);
-    initFields(result);
-    if (invokeDefaultConstructor) {
-      final JJJVMClassMethod constructor = this.findDeclaredMethod("<init>", "()V");
-      if (constructor == null) {
-        throw new IllegalAccessException("Can't find the default constructor");
-      }
-      invoke(result, constructor, null, null, null);
-    }
-    return result;
-  }
-
-  /**
-   * Create new class instance and call defined constructor.
-   *
-   * @param constructorSignature the signature of the constructor to be called
-   * after memory allocation, must not be null
-   * @param args array of arguments for the constructor, can be null
-   * @param stack predefined stack for the call, can be null
-   * @param vars predefined local variable array, can be null
-   * @return new object instance of the class, must not be null
-   * @throws Throwable it will be thrown for errors
-   */
-  public JJJVMObject newInstance(final String constructorSignature, final Object[] args, final Object[] stack, final Object[] vars) throws Throwable {
-    final JJJVMClassMethod constructor = this.findMethod("<init>", constructorSignature);
-    if (constructor == null) {
-      throw new IllegalAccessException("Can't find the constructor [" + getClassName() + ' ' + constructorSignature + ']');
-    }
-    final JJJVMObject result = new JJJVMObject(this);
-    initFields(result);
-    invoke(result, constructor, args, stack, vars);
-    return result;
-  }
-
-  private void initFields(final JJJVMObject classInstance) throws Throwable {
-    final Object parent = this.provider.resolveClass(getSuperclassName());
-    if (parent != null && parent instanceof JJJVMClass) {
-      ((JJJVMClass) parent).initFields(classInstance);
-    }
-
-    for (final Entry<String, JJJVMClassField> current : this.declaredFields.entrySet()) {
-      final JJJVMClassField theField = current.getValue();
-
-      final String fieldSignature = theField.getSignature();
-      final Object fieldValue;
-
-      if (fieldSignature.length() > 1) {
-        // it is an object type, should be inited by null
-        fieldValue = null;
-      }
-      else {
-        // it is a primitive type
-        switch (fieldSignature.charAt(0)) {
-          case JJJVMClassMethod.TYPE_LONG:
-            fieldValue = (long) 0;
-            break;
-          case JJJVMClassMethod.TYPE_INT:
-          case JJJVMClassMethod.TYPE_SHORT:
-          case JJJVMClassMethod.TYPE_CHAR:
-            fieldValue = 0;
-            break;
-          case JJJVMClassMethod.TYPE_DOUBLE:
-            fieldValue = 0.0d;
-            break;
-          case JJJVMClassMethod.TYPE_FLOAT:
-            fieldValue = 0.0f;
-            break;
-          case JJJVMClassMethod.TYPE_BOOLEAN:
-            fieldValue = false;
-            break;
-          default:
-            throw new IllegalArgumentException("Unsupported field type [" + fieldSignature + ']');
-        }
-      }
-
-      if ((theField.getFlags() & JJJVMClassField.ACC_STATIC) == 0) {
-        classInstance.set(theField.getName(), fieldValue, false);
-      }
-    }
-  }
-
-  /**
-   * Read value of a class static field.
-   * @param fieldName the field name, must not be null
-   * @return the value from the static field
-   * @throws NoSuchFieldException if the field is not found
-   * @throws Throwable it will be thrown for inside errors
-   */
-  public Object readStaticField(final String fieldName) throws Throwable {
-    final JJJVMClassField field = this.findField(fieldName);
-    if (field == null) {
-      throw new NoSuchFieldException(fieldName);
-    }
-    return field.getStaticValue();
-  }
-
-  /**
-   * Write value into a class static field.
-   * @param fieldName the field name, must not be null
-   * @param value value to be written into the field
-   * @throws NoSuchFieldException if the field is not found
-   * @throws IllegalStateException if the field is final
-   * @throws Throwable it will be thrown for inside errors
-   */
-  public void writeStaticField(final String fieldName, final Object value) throws Throwable {
-    final JJJVMClassField field = this.findField(fieldName);
-    if (field == null) {
-      throw new NoSuchFieldException(fieldName);
-    }
-    field.setStaticValue(value);
-  }
-
-  Map<String, JJJVMClassField> getDeclaredFields() {
-    return this.declaredFields;
-  }
-
-  Map<String, JJJVMClassMethod> getDeclaredMethods() {
-    return this.declaredMethods;
+   private static boolean isCategory2(final Object obj) {
+    return obj instanceof Double || obj instanceof Long;
   }
 }

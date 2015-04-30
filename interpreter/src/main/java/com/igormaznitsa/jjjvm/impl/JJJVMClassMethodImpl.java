@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.igormaznitsa.jjjvm;
+package com.igormaznitsa.jjjvm.impl;
 
+import com.igormaznitsa.jjjvm.*;
 import java.io.DataInputStream;
 import java.io.IOException;
 
@@ -22,38 +23,8 @@ import java.io.IOException;
  * Class contains class method info.
  * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.6}
  */
-public final class JJJVMClassMethod {
-  // flags of a method
-  public static final int ACC_PUBLIC = 0x0001;
-  public static final int ACC_PRIVATE = 0x0002;
-  public static final int ACC_PROTECTED = 0x0004;
-  public static final int ACC_STATIC = 0x0008;
-  public static final int ACC_FINAL = 0x0010;
-  public static final int ACC_SYNCHRONIZED = 0x0020;
-  public static final int ACC_BRIDGE = 0x0040;
-  public static final int ACC_VARARGS = 0x0080;
-  public static final int ACC_NATIVE = 0x0100;
-  public static final int ACC_ABSTRACT = 0x0400;
-  public static final int ACC_STRICT = 0x0800;
-  public static final int ACC_SYNTHETIC = 0x1000;
-  //-----------------------------------------
-  // types of data
-  public static final char TYPE_BYTE = 'B';
-  public static final char TYPE_CHAR = 'C';
-  public static final char TYPE_DOUBLE = 'D';
-  public static final char TYPE_FLOAT = 'F';
-  public static final char TYPE_INT = 'I';
-  public static final char TYPE_LONG = 'J';
-  public static final char TYPE_SHORT = 'S';
-  public static final char TYPE_BOOLEAN = 'Z';
-  public static final char TYPE_VOID = 'V';
-  public static final char TYPE_CLASS = 'L';
-  public static final char TYPE_ARRAY = '[';
-  //-----------------------------------------
-  private static final String ATTRIBUTE_EXCEPTIONS = "Exceptions";
-  private static final String ATTRIBUTE_CODE = "Code";
-  //-----------------------------------------
-  private  final JJJVMClass declaringClass;
+public final class JJJVMClassMethodImpl implements JJJVMMethod {
+  private  final JJJVMKlazz declaringClass;
   private final int flags;
   private final String name;
   private final String signature;
@@ -63,15 +34,15 @@ public final class JJJVMClassMethod {
   private final int maxLocals;
   private final byte[] bytecode;
   
-  JJJVMClassMethod(final JJJVMClass declaringClass, final DataInputStream inStream) throws IOException {
-    final JJJVMConstantPool cpool = declaringClass.getConstantPool();
+  JJJVMClassMethodImpl(final JJJVMClassImpl declaringClass, final DataInputStream inStream) throws IOException {
+    final JJJVMConstantPoolImpl cpool = declaringClass.getConstantPool();
     
     this.declaringClass = declaringClass;
     this.flags = inStream.readUnsignedShort();
     final int nameIndex = inStream.readUnsignedShort();
     final int descriptorIndex = inStream.readUnsignedShort();
-    this.name = cpool.get(nameIndex).asString();
-    this.signature = cpool.get(descriptorIndex).asString();
+    this.name = cpool.getItem(nameIndex).asString();
+    this.signature = cpool.getItem(descriptorIndex).asString();
     
     int numberOfAttrs = inStream.readUnsignedShort();
     
@@ -82,7 +53,7 @@ public final class JJJVMClassMethod {
     JJJVMCatchBlockDescriptor [] lcatchBlocks = null;
     
     while (--numberOfAttrs >= 0) {
-      final String attrName = cpool.get(inStream.readUnsignedShort()).asString();
+      final String attrName = cpool.getItem(inStream.readUnsignedShort()).asString();
       // read the size of the attribute data
       final int attributeDataLen = inStream.readInt();
       if (ATTRIBUTE_EXCEPTIONS.equals(attrName)) {
@@ -90,7 +61,7 @@ public final class JJJVMClassMethod {
         final int numberOfExceptions = inStream.readUnsignedShort();
         declExceptions = new String[numberOfExceptions];
         for (int li = 0; li < numberOfExceptions; li++) {
-          declExceptions[li] = cpool.get(inStream.readUnsignedShort()).asString();
+          declExceptions[li] = cpool.getItem(inStream.readUnsignedShort()).asString();
         }
       }
       else {
@@ -106,7 +77,7 @@ public final class JJJVMClassMethod {
             lcatchBlocks[li] = new JJJVMCatchBlockDescriptor(cpool, inStream);
           }
           // skip all other attributes in the code attribute
-          JJJVMClass.skipAllAttributesInStream(inStream);
+          JJJVMClassImpl.skipAllAttributesInStream(inStream);
         }
         else {
           // skip other attribute data
@@ -130,10 +101,10 @@ public final class JJJVMClassMethod {
   } 
 
   public Object invoke(final JJJVMObject instance, final Object[] arguments) throws Throwable {
-    return this.declaringClass.invoke(instance, this, arguments, null, null);
+    return JJJVMInterpreter.invoke(this.declaringClass, instance, this, arguments, null, null);
   }
   
-  public JJJVMClass getDeclaringClass(){
+  public JJJVMKlazz getDeclaringClass(){
     return this.declaringClass;
   }
   

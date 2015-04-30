@@ -1,5 +1,6 @@
 package com.igormaznitsa.jjjvm;
 
+import com.igormaznitsa.jjjvm.impl.JJJVMClassImpl;
 import java.io.*;
 import javassist.*;
 import org.apache.bcel.Constants;
@@ -38,7 +39,7 @@ public abstract class TestHelper {
   protected static final float CONST_FLT_H = 1214.56f;
   protected static final long CONST_LNG_H = 1200567890L;
 
-  protected static JJJVMClass prepareTestClass(final JJJVMProvider processor, final String method) throws Throwable {
+  protected static JJJVMClassImpl prepareTestClass(final JJJVMProvider processor, final String method) throws Throwable {
     final ClassPool classPool = ClassPool.getDefault();
     final CtClass clazz = classPool.makeClass("com.igormaznitsa.SyntheticMJVMTest");
     clazz.addField(CtField.make("public static int sfield;", clazz));
@@ -49,13 +50,13 @@ public abstract class TestHelper {
     
 //    FileUtils.writeByteArrayToFile(new File("/home/igorm/1/SyntheticMJVMTest.class"), classBody);
     
-    final JJJVMClass result = new JJJVMClass(new ByteArrayInputStream(classBody), processor);
+    final JJJVMClassImpl result = new JJJVMClassImpl(new ByteArrayInputStream(classBody), processor);
     clazz.detach();
     return result;
   }
 
-  protected static JJJVMClass loadClassFromClassPath(final JJJVMProvider provider, final String className) throws Throwable {
-    return new JJJVMClass(new ByteArrayInputStream(loadClassBodyFromClassPath(className)), provider);
+  protected static JJJVMKlazz loadClassFromClassPath(final JJJVMProvider provider, final String className) throws Throwable {
+    return new JJJVMClassImpl(new ByteArrayInputStream(loadClassBodyFromClassPath(className)), provider);
   }
   
   protected static byte[] loadClassBodyFromClassPath(final String className) throws Throwable {
@@ -64,7 +65,7 @@ public abstract class TestHelper {
     return klazz.toBytecode();
   }
   
-  protected static JJJVMClass prepareTestClass(final JJJVMProvider processor, final Type type, final Object... instructions) throws Throwable {
+  protected static JJJVMClassImpl prepareTestClass(final JJJVMProvider processor, final Type type, final Object... instructions) throws Throwable {
     final ClassGen clazzGen = new ClassGen("com.igormaznitsa.SyntheticMJVMTest", "java.lang.Object", "SyntheticMJVMTest.java", Constants.ACC_PUBLIC, null);
     clazzGen.addEmptyConstructor(Constants.ACC_PUBLIC);
 
@@ -125,10 +126,10 @@ public abstract class TestHelper {
     final byte[] bbb = buffer.toByteArray();
     FileUtils.writeByteArrayToFile(new File("/home/igorm/1/SyntheticMJVMTest.class"), bbb);
 
-    return new JJJVMClass(new ByteArrayInputStream(buffer.toByteArray()), processor);
+    return new JJJVMClassImpl(new ByteArrayInputStream(buffer.toByteArray()), processor);
   }
 
-  protected <K> K executeTestMethod(final JJJVMClass clazz, final Class<K> type, final Object[] stack, final Object... args) throws Throwable {
+  protected <K> K executeTestMethod(final JJJVMKlazz clazz, final Class<K> type, final Object[] stack, final Object... args) throws Throwable {
     final JJJVMObject obj = clazz.newInstance(true);
 
     final Type bceltype;
@@ -161,10 +162,10 @@ public abstract class TestHelper {
       bceltype = Type.getType(type);
     }
 
-    final JJJVMClassMethod method = clazz.findDeclaredMethod("test", "(" + bceltype.getSignature() + ")" + bceltype.getSignature());
+    final JJJVMMethod method = clazz.findDeclaredMethod("test", "(" + bceltype.getSignature() + ")" + bceltype.getSignature());
     Assert.assertNotNull("Method not found", method);
 
-    Object result = clazz.invoke(obj, method, args, stack, null);
+    Object result = JJJVMInterpreter.invoke(clazz, obj, method, args, stack, null);
 
     if (type == Byte.class) {
       result = ((Integer)result).byteValue();

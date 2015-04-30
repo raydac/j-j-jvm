@@ -15,6 +15,7 @@
  */
 package com.igormaznitsa.jjjvm;
 
+import com.igormaznitsa.JJJVMField;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -24,15 +25,16 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Object container describing some instances of JJJVMClass.
  *
- * @see JJJVMClass#newInstance(boolean) 
- * @see JJJVMClass#newInstance(java.lang.String, java.lang.Object[], java.lang.Object[], java.lang.Object[]) 
+ * @see JJJVMClass#newInstance(boolean)
+ * @see JJJVMClass#newInstance(java.lang.String, java.lang.Object[],
+ * java.lang.Object[], java.lang.Object[])
  */
 public final class JJJVMObject {
 
   /**
    * The Class of the object.
    */
-  private final JJJVMClass klazz;
+  private final JJJVMKlazz klazz;
   /**
    * Flag shows that the object is finalized.
    */
@@ -46,37 +48,35 @@ public final class JJJVMObject {
    */
   private final ReentrantLock monitor = new ReentrantLock();
 
-  Object get(final String fieldName, final boolean checkKey) {
+  public Object get(final String fieldName, final boolean checkKey) {
     if (checkKey && !this.fieldValues.containsKey(fieldName)) {
       throw new IllegalArgumentException("Unknown field name '" + fieldName + '\'');
     }
     return this.fieldValues.get(fieldName);
   }
 
-  void set(final String fieldName, final Object value, final boolean checkThatFieldPresented) {
+  public void set(final String fieldName, final Object value, final boolean checkThatFieldPresented) {
     if (checkThatFieldPresented && !this.fieldValues.containsKey(fieldName)) {
       throw new IllegalArgumentException("Unknown field name '" + fieldName + '\'');
     }
     this.fieldValues.put(fieldName, value);
   }
 
-  JJJVMObject() {
-    this.klazz = null;
-  }
-
-  JJJVMObject(final JJJVMClass klazz) throws Throwable {
+  public JJJVMObject(final JJJVMKlazz klazz) throws Throwable {
     this.klazz = klazz;
-    final Map<String, JJJVMClassField> map = klazz.getDeclaredFields();
-    // init constants
-    for (final Entry<String, JJJVMClassField> e : map.entrySet()) {
-      final JJJVMClassField field = e.getValue();
-      if ((field.getFlags() & JJJVMClassField.ACC_STATIC) == 0) {
-        this.fieldValues.put(field.getName(), field.getConstantValue());
+    if (klazz != null) {
+      final Map<String, JJJVMField> map = klazz.getDeclaredFields();
+      // init constants
+      for (final Entry<String, JJJVMField> e : map.entrySet()) {
+        final JJJVMField field = e.getValue();
+        if ((field.getFlags() & JJJVMField.ACC_STATIC) == 0) {
+          this.fieldValues.put(field.getName(), field.getConstantValue());
+        }
       }
     }
   }
 
-  public JJJVMClass getKlazz() {
+  public JJJVMKlazz getKlazz() {
     return this.klazz;
   }
 
@@ -87,9 +87,9 @@ public final class JJJVMObject {
   public void doFinalize() throws Throwable {
     if (this.objectFinalized.compareAndSet(false, true)) {
       try {
-        final JJJVMClassMethod finalizeMethod = klazz.findDeclaredMethod("finalize", "()V");
+        final JJJVMMethod finalizeMethod = this.klazz.findDeclaredMethod("finalize", "()V");
         if (finalizeMethod != null) {
-          klazz.invoke(this, finalizeMethod, null, null, null);
+          JJJVMInterpreter.invoke(this.klazz, this, finalizeMethod, null, null, null);
         }
       }
       finally {
