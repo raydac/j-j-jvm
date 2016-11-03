@@ -5,7 +5,9 @@
   <groupId>com.igormaznitsa</groupId>
   <artifactId>j-j-jvm</artifactId>
   <version>1.1.0-SNAPSHOT</version>
-  
+
+  <name>j-j-jvm</name>
+    
   <packaging>pom</packaging>
 
   <properties>
@@ -41,6 +43,7 @@
         <role>author</role>
       </roles>
       <url>http://www.igormaznitsa.com</url>
+      <email>rrg4400@gmail.com</email>
     </developer>
   </developers>
                                     
@@ -48,5 +51,4 @@
     <module>uistubgen</module>
     <module>interpreter</module>
   </modules>
-  <name>j-j-jvm</name>
 </project>
