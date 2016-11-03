@@ -1,9 +1,13 @@
+[![License Apache 2.0](https://img.shields.io/badge/license-Apache%20License%202.0-green.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+[![PayPal donation](https://img.shields.io/badge/donation-PayPal-red.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=AHWJHJFBAWGL2)
+[![Yandex.Money donation](https://img.shields.io/badge/donation-Я.деньги-yellow.svg)](https://money.yandex.ru/embed/small.xml?account=41001158080699&quickpay=small&yamoney-payment-type=on&button-text=01&button-size=l&button-color=orange&targets=%D0%9F%D0%BE%D0%B6%D0%B5%D1%80%D1%82%D0%B2%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5+%D0%BD%D0%B0+%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B+%D1%81+%D0%BE%D1%82%D0%BA%D1%80%D1%8B%D1%82%D1%8B%D0%BC+%D0%B8%D1%81%D1%85%D0%BE%D0%B4%D0%BD%D1%8B%D0%BC+%D0%BA%D0%BE%D0%B4%D0%BE%D0%BC&default-sum=100&successURL=)
+
 # History
-In 2009 I had some free time during weekend and decided to try to develop a small JVM interpreter which could be used under J2ME CLDC 1.0 because that platform didn't have any ClassLoader support but it was very useful to load compiled class files through network and execute them. The Development of proof of concept took about 3 days and worked with good speed even on Nokia 6100. The project was published as OSS project on my home page as "M-JVM" and even had some interest from mobile community.  
+In 2009 I had some free time during weekend and decided to try to develop small JVM interpreter in pure Java which could be used in J2ME CLDC 1.0 platform because the platform didn't have any ClassLoader support but it was very useful to load compiled class files through network and execute them. The Development of the "proof of concept" took about 3 days and worked with good speed even on Nokia 6100. The project was published as OSS project on my home page (titled as "M-JVM") and I even detected some interest from mobile software developers.  
 
-In 2015 I decided to rework my home page and remove the old project from there, but because it can be useful for someone, I made some refactoring and moved it to GitHub as J-J-JVM project. I have strongly improved the project, now it supports inner classes, double and long values, has a lot of tests. The Library is compatible with Android API 2.0r1.    
+In 2015 I decided to rework my home page and removed the old project from there, but because it still can be useful for someone, I made refactored it and moved sources to GitHub under title J-J-JVM project. I made some improvements in the project, added support of inner classes, double and long values, added dozens of tests. The Library is tests for compatibility with Android API 2.0r1+.    
 
-__The JVM interpreter doesn't contain any "Poka-yoke" (mistake-proofing) mechanism and checking in the byte-code processor, it doesn't make any stack map checking and doesn't make any requests to security manager!__
+__The JVM interpreter doesn't contain any "Poka-yoke" (mistake-proofing) mechanism and verification of byte-code, it doesn't make any stack map verification and any requests or communication with Java security manager!__
 
 # Hello world
 For instance we have some class which prints "Hello world!" to the console.
@@ -16,7 +20,7 @@ public class HelloWorld {
   }
 }
 ```
-And we want to execute the main method of the class with J-J-JVM. To Load the class body we use Javassist. But lets not just print the message but will catch it and make some processing.
+And we want to execute the main method within JJJVM. To Load the class body we use Javassist. But lets not just print the message but will catch it and make some processing.
 ```Java
 JJJVMProvider provider = new JSEProviderImpl(){
   @Override
@@ -35,7 +39,3 @@ And the code above will print
 ```
 <<Hello world!>>
 ```
-
-# Donation   
-If you like the software you can make some donation to the author   
-[![https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=AHWJHJFBAWGL2)
