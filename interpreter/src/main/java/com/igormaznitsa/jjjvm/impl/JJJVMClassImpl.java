@@ -15,6 +15,7 @@
  */
 package com.igormaznitsa.jjjvm.impl;
 
+import static com.igormaznitsa.jjjvm.impl.JJJVMImplUtils.assertNotNull;
 import com.igormaznitsa.jjjvm.model.JJJVMClass;
 import com.igormaznitsa.jjjvm.model.JJJVMObject;
 import com.igormaznitsa.jjjvm.model.JJJVMProvider;
@@ -74,19 +75,15 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
   /**
    * It parses and create instance of class which represented by input stream.
    *
-   * @param in stream contains array describing a compiled java class,
-   * must not be null
+   * @param in stream contains array describing a compiled java class, must not
+   * be null
    * @param provider a provider which implements misc service methods to process
    * byte code and resolve classes, must not be null
    * @throws Throwable it will be thrown for errors
    */
   public JJJVMClassImpl(final InputStream in, final JJJVMProvider provider) throws Throwable {
-    if (provider == null) {
-      throw new NullPointerException("External processor must be provided");
-    }
-    if (in == null) {
-      throw new NullPointerException("Input stream must be provided");
-    }
+    assertNotNull("Provider is not defined", provider);
+    assertNotNull("InputStream is null", in);
 
     this.provider = provider;
 
@@ -95,6 +92,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
     if (inStream.readInt() != 0xCAFEBABE) {
       throw new IOException("Not Java class");
     }
+
     this.classFileFormatVersion = inStream.readInt();
     this.constantPool = new JJJVMConstantPoolImpl(this, inStream);
     this.flags = inStream.readUnsignedShort();
@@ -123,11 +121,9 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
         final String attrName = this.constantPool.getItemAt(nameIndex).asString();
         if (ATTRNAME_INNERCLASSES.equals(attrName)) {
           detectedInnerClassess = readInnerClasses(inStream);
-        }
-        else if (ATTRNAME_SOURCEFILE.equals(attrName)) {
+        } else if (ATTRNAME_SOURCEFILE.equals(attrName)) {
           sourceFileName = this.constantPool.getItemAt(inStream.readUnsignedShort()).asString();
-        }
-        else {
+        } else {
           JJJVMImplUtils.skip(inStream, dataSize);
         }
       }
@@ -166,7 +162,8 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
   }
 
   private JJJVMInnerClassRecord[] readInnerClasses(final DataInputStream inStream) throws Throwable {
-    int numberOfClassess = inStream.readUnsignedShort();
+    final int numberOfClassess = inStream.readUnsignedShort();
+
     final JJJVMInnerClassRecord[] result = new JJJVMInnerClassRecord[numberOfClassess];
     for (int i = 0; i < numberOfClassess; i++) {
       final JJJVMInnerClassRecord record = new JJJVMInnerClassRecord(this, inStream);
@@ -183,12 +180,12 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
   /**
    * Check, is the class still in loading mode.
    *
-   * @param jvmFormattedClassName class name to check, must not be null
+   * @param qualifiedClassName class name to check, must not be null
    * @return true if the class with the name is still in the loading list, false
    * otherwise
    */
-  public static boolean isClassLoading(final String jvmFormattedClassName) {
-    return loadingClasses.containsKey(jvmFormattedClassName);
+  public static boolean isClassLoading(final String qualifiedClassName) {
+    return loadingClasses.containsKey(qualifiedClassName);
   }
 
   /**
@@ -400,7 +397,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
   }
 
   private void assertCanBeInstantiated() {
-    if ((this.flags & (ACC_ABSTRACT | ACC_INTERFACE)) != 0)  {
+    if ((this.flags & (ACC_ABSTRACT | ACC_INTERFACE)) != 0) {
       throw new IllegalStateException("Class '" + this.getName() + "' abstract one or interface");
     }
   }
@@ -466,8 +463,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
       if (fieldSignature.length() > 1) {
         // it is an object type, should be inited by null
         fieldValue = null;
-      }
-      else {
+      } else {
         // it is a primitive type
         switch (fieldSignature.charAt(0)) {
           case JJJVMClassMethodImpl.TYPE_LONG:
@@ -510,9 +506,11 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
    */
   public Object readStaticField(final String fieldName) throws Throwable {
     final JJJVMField field = this.findField(fieldName);
+    
     if (field == null) {
       throw new NoSuchFieldException(fieldName);
     }
+    
     return field.getStaticValue();
   }
 
@@ -527,9 +525,11 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
    */
   public void writeStaticField(final String fieldName, final Object value) throws Throwable {
     final JJJVMField field = this.findField(fieldName);
+    
     if (field == null) {
       throw new NoSuchFieldException(fieldName);
     }
+    
     field.setStaticValue(value);
   }
 

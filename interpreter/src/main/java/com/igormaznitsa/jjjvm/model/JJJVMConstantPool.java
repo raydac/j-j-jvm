@@ -20,20 +20,24 @@ package com.igormaznitsa.jjjvm.model;
  * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4}
  */
 public interface JJJVMConstantPool {
+
   /**
    * The Class containing the constant pool.
+   *
    * @return the class containing the constant pool.
    */
   JJJVMClass getDeclaringClass();
-  
+
   /**
    * Number of elements in the class constant pool.
+   *
    * @return number of elements in the constant pool.
    */
   int size();
-  
+
   /**
    * Get Constant pool item.
+   *
    * @param itemIndex the index of constant pool item to get.
    * @return the constant pool item for its index.
    */

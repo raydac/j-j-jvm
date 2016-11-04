@@ -23,6 +23,7 @@ import java.io.IOException;
  * {@link https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.6}
  */
 public class JJJVMInnerClassRecord {
+
   /**
    * The Declaring class.
    */
@@ -32,7 +33,8 @@ public class JJJVMInnerClassRecord {
    */
   protected final int innerClassInfoIndex;
   /**
-   * The Index in the declaring class constant pool of the outer class info. it can be 0.
+   * The Index in the declaring class constant pool of the outer class info. it
+   * can be 0.
    */
   protected final int outerClassInfoIndex;
   /**
@@ -43,32 +45,32 @@ public class JJJVMInnerClassRecord {
    * Flags of the inner class.
    */
   protected final int flags;
-  
-  public JJJVMInnerClassRecord(final JJJVMClass declaring, final int innerClassInfoIndex, final int outerClassInfoIndex, final int innerNameIndex, final int flags){
+
+  public JJJVMInnerClassRecord(final JJJVMClass declaring, final int innerClassInfoIndex, final int outerClassInfoIndex, final int innerNameIndex, final int flags) {
     this.declaringClass = declaring;
     this.innerClassInfoIndex = innerClassInfoIndex;
     this.outerClassInfoIndex = outerClassInfoIndex;
     this.innerNameIndex = innerNameIndex;
     this.flags = flags;
   }
-  
+
   public JJJVMInnerClassRecord(final JJJVMClass declaring, final DataInputStream inStream) throws IOException {
     this(declaring, inStream.readUnsignedShort(), inStream.readUnsignedShort(), inStream.readUnsignedShort(), inStream.readUnsignedShort());
   }
-  
-  public int getFlags(){
+
+  public int getFlags() {
     return this.flags;
   }
-  
-  public JJJVMConstantPoolItem getInnerClassInfo(){
+
+  public JJJVMConstantPoolItem getInnerClassInfo() {
     return this.declaringClass.getConstantPool().getItemAt(this.innerClassInfoIndex);
   }
-  
-  public JJJVMConstantPoolItem getOuterClassInfo(){
+
+  public JJJVMConstantPoolItem getOuterClassInfo() {
     return this.declaringClass.getConstantPool().getItemAt(this.outerClassInfoIndex);
   }
-  
-  public String getName(){
-    return (String)this.declaringClass.getConstantPool().getItemAt(this.innerNameIndex).asObject();
+
+  public String getName() {
+    return (String) this.declaringClass.getConstantPool().getItemAt(this.innerNameIndex).asObject();
   }
 }

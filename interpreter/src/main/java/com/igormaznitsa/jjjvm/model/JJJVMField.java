@@ -16,15 +16,23 @@
 package com.igormaznitsa.jjjvm.model;
 
 public interface JJJVMField extends JJJVMConstants {
+
   JJJVMClass getDeclaringClass();
+
   int getFlags();
+
   String getName();
+
   String getSignature();
 
   Object getConstantValue();
+
   Object getStaticValue();
+
   void setStaticValue(Object localMethodStack);
-  void set(JJJVMObject jjjobj, Object fieldValue);
-  Object get(JJJVMObject jjjobj);
-  
+
+  void set(JJJVMObject object, Object fieldValue);
+
+  Object get(JJJVMObject object);
+
 }

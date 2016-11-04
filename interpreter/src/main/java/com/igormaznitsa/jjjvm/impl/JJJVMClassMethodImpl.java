@@ -64,8 +64,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
         for (int li = 0; li < numberOfExceptions; li++) {
           declExceptions[li] = cpool.getItemAt(inStream.readUnsignedShort()).asString();
         }
-      }
-      else {
+      } else {
         if (ATTRNAME_CODE.equals(attrName)) {
           // read the method bytecode and its attributes
           lmaxStackDepth = inStream.readUnsignedShort();
@@ -80,8 +79,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
           }
           // skip all other attributes in the code attribute
           JJJVMClassImpl.skipAllAttributesInStream(inStream);
-        }
-        else {
+        } else {
           // skip other attribute data
           JJJVMImplUtils.skip(inStream, attributeDataLen);
         }
@@ -107,7 +105,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
   }
 
   public Object invoke(final JJJVMObject instance, final Object[] arguments) throws Throwable {
-    if ((this.flags & ACC_STATIC) == 0 && instance == null){
+    if ((this.flags & ACC_STATIC) == 0 && instance == null) {
       throw new NullPointerException("'this' can't be null for non-static method");
     }
     return JJJVMInterpreter.invoke(this.declaringClass, instance, this, arguments, null, null);

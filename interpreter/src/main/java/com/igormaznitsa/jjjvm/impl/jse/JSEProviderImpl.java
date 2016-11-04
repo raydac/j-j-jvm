@@ -68,16 +68,18 @@ public class JSEProviderImpl implements JJJVMProvider {
 
   protected final ClassDataLoader classDataLoader;
 
-  public JSEProviderImpl(){
+  public JSEProviderImpl() {
     this.classDataLoader = new ClassDataLoader() {
       public byte[] loadClassBody(String jvmFormattedClassName) throws IOException {
         return null;
       }
     };
   }
-  
+
   public JSEProviderImpl(final ClassDataLoader classLoader) {
-    if (classLoader == null) throw new NullPointerException("Loader is null");
+    if (classLoader == null) {
+      throw new NullPointerException("Loader is null");
+    }
     this.classDataLoader = classLoader;
   }
 
@@ -108,8 +110,7 @@ public class JSEProviderImpl implements JJJVMProvider {
           if (result == null) {
             throw new Error("Unexpected state, inner class [" + innerClassName + "] is not loaded");
           }
-        }
-        else {
+        } else {
           result = loadClassFromLoader(innerClassName);
           this.classCache.put(innerClassName, result);
         }
@@ -122,12 +123,15 @@ public class JSEProviderImpl implements JJJVMProvider {
     if (clazz == null) {
       throw new NullPointerException("Class is null");
     }
+    
     if (jvmFormattedClassName == null) {
       throw new NullPointerException("Class name is null");
     }
+    
     if (!(clazz instanceof Class || clazz instanceof JJJVMClass)) {
       throw new IllegalArgumentException("Unexpected class object [" + clazz + ']');
     }
+    
     synchronized (this.classCache) {
       this.classCache.put(jvmFormattedClassName, clazz);
     }
@@ -154,8 +158,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     final Object klazz = resolveClass(jvmFormattedClassName);
     if (klazz instanceof JJJVMClass) {
       return ((JJJVMClass) klazz).newInstance(false);
-    }
-    else {
+    } else {
       return UNSAFE.allocateInstance((Class) klazz);
     }
   }
@@ -181,8 +184,7 @@ public class JSEProviderImpl implements JJJVMProvider {
       final Constructor constructor = klazz.getConstructor(paramClasses);
       constructor.setAccessible(true);
       return constructor.newInstance(arguments);
-    }
-    else {
+    } else {
       final Method method = findMethod(klazz, methodName, paramClasses);
       JJJVMImplUtils.makeAccessible(method);
       return method.invoke(instance, arguments);
@@ -193,8 +195,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     final Object resolvedClass = resolveClass(jvmFormattedClassName);
     if (resolvedClass instanceof JJJVMClass) {
       return new JJJVMClass[arrayLength];
-    }
-    else {
+    } else {
       return (Object[]) Array.newInstance((Class) resolvedClass, arrayLength);
     }
   }
@@ -208,12 +209,10 @@ public class JSEProviderImpl implements JJJVMProvider {
       if (className) {
         if (chr == ';') {
           break;
-        }
-        else {
+        } else {
           buffer.append(chr);
         }
-      }
-      else {
+      } else {
         if (chr == '[') {
           continue;
         }
@@ -259,15 +258,13 @@ public class JSEProviderImpl implements JJJVMProvider {
         default:
           throw new Error("Unexpected type [" + extractedType + ']');
       }
-    }
-    else {
+    } else {
       resolvedClass = resolveClass(extractedType);
     }
 
     if (resolvedClass instanceof JJJVMClass) {
       return Array.newInstance(JJJVMClass.class, arrayDimensions);
-    }
-    else {
+    } else {
       final Class klazz = (Class) resolvedClass;
       return Array.newInstance(klazz, arrayDimensions);
     }
@@ -313,8 +310,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     if (obj instanceof JJJVMObject) {
       final JJJVMObject jjjobj = (JJJVMObject) obj;
       return jjjobj.getDeclaringClass().findDeclaredField(fieldName).get(jjjobj);
-    }
-    else {
+    } else {
       return findField(obj.getClass(), fieldName).get(obj);
     }
   }
@@ -323,8 +319,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     if (obj instanceof JJJVMObject) {
       final JJJVMObject jjjobj = (JJJVMObject) obj;
       jjjobj.getDeclaringClass().findDeclaredField(fieldName).set(jjjobj, fieldValue);
-    }
-    else {
+    } else {
       findField(obj.getClass(), fieldName).set(obj, fieldValue);
     }
   }
@@ -333,8 +328,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     final Object resolved = resolveClass(jvmFormattedClassName);
     if (resolved instanceof JJJVMClass) {
       return ((JJJVMClass) resolved).findDeclaredField(fieldName).getStaticValue();
-    }
-    else {
+    } else {
       return findField((Class) resolved, fieldName).get(null);
     }
   }
@@ -343,8 +337,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     final Object resolved = resolveClass(jvmFormattedClassName);
     if (resolved instanceof JJJVMClass) {
       ((JJJVMClass) resolved).findDeclaredField(fieldName).setStaticValue(value);
-    }
-    else {
+    } else {
       findField((Class) resolved, fieldName).set(null, value);
     }
   }
@@ -361,8 +354,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     final boolean result;
     if ("java/lang/Object".equals(jvmFormattedClassName)) {
       result = true;
-    }
-    else {
+    } else {
       result = findClassForNameInHierarchy(klazz, jvmFormattedClassName) != null;
     }
     return result;
@@ -433,8 +425,7 @@ public class JSEProviderImpl implements JJJVMProvider {
       final Object detected;
       if (resolvedClass instanceof JJJVMClass) {
         detected = findClassForNameInHierarchy((JJJVMClass) resolvedClass, jvmFormattedClassName);
-      }
-      else {
+      } else {
         detected = findClassForNameInHierarchy((Class) resolvedClass, jvmFormattedClassName);
       }
       if (detected != null) {
@@ -445,8 +436,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     final Object superKlazz = klazz.resolveSuperclass();
     if (superKlazz instanceof JJJVMClass) {
       return findClassForNameInHierarchy((JJJVMClass) superKlazz, jvmFormattedClassName);
-    }
-    else {
+    } else {
       return findClassForNameInHierarchy((Class) superKlazz, normalizedName);
     }
   }
@@ -471,12 +461,10 @@ public class JSEProviderImpl implements JJJVMProvider {
         if (flag == null) {
           result = findClassForNameInHierarchy(jjjvmObj.getDeclaringClass(), jvmFormattedClassName) != null;
           record.put(objClassName, result);
-        }
-        else {
+        } else {
           result = flag;
         }
-      }
-      else {
+      } else {
         final String klazzName = value.getClass().getName();
         Boolean flag = record.get(klazzName);
         if (flag == null) {
@@ -488,8 +476,7 @@ public class JSEProviderImpl implements JJJVMProvider {
             result = false;
           }
           record.put(klazzName, result);
-        }
-        else {
+        } else {
           result = flag;
         }
       }
@@ -500,8 +487,7 @@ public class JSEProviderImpl implements JJJVMProvider {
   public void doThrow(final JJJVMClass caller, final Object objectProvidedAsThrowable) throws Throwable {
     if (objectProvidedAsThrowable instanceof Throwable) {
       throw (Throwable) objectProvidedAsThrowable;
-    }
-    else {
+    } else {
       throw new Throwable(objectProvidedAsThrowable.toString());
     }
   }
@@ -511,16 +497,13 @@ public class JSEProviderImpl implements JJJVMProvider {
       final JJJVMObject jjjvmobj = (JJJVMObject) object;
       if (lock) {
         jjjvmobj.lock();
-      }
-      else {
+      } else {
         jjjvmobj.unlock();
       }
-    }
-    else {
+    } else {
       if (lock) {
         UNSAFE.monitorEnter(object);
-      }
-      else {
+      } else {
         UNSAFE.monitorExit(object);
       }
     }
@@ -547,18 +530,15 @@ public class JSEProviderImpl implements JJJVMProvider {
           final Object resolvedClass = resolveClass(className);
           if (resolvedClass instanceof Class) {
             resultList.add(dimensions == 0 ? (Class) resolvedClass : makeMultidimensionArrayClass((Class) resolvedClass, dimensions));
-          }
-          else {
+          } else {
             throw new IllegalArgumentException("Must be java.lang.Class [" + resolvedClass + ']');
           }
 
           dimensions = 0;
-        }
-        else {
+        } else {
           klazzNameBuffer.append(chr);
         }
-      }
-      else {
+      } else {
         final Class klazz;
         switch (chr) {
           case '(':

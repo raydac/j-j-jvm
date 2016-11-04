@@ -37,18 +37,17 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
 
   /**
    * Write static value in the field.
+   *
    * @param value object to be saved
    * @throws IllegalStateException if the field is either non static or is final
    */
   public void setStaticValue(final Object value) {
     if ((this.flags & ACC_STATIC) == 0) {
       throw new IllegalStateException("Field '" + this.name + "' is not static");
-    }
-    else {
+    } else {
       if ((this.flags & ACC_FINAL) == 0) {
         this.staticValue = value;
-      }
-      else {
+      } else {
         throw new IllegalStateException("Field '" + this.name + "' is final");
       }
     }
@@ -56,14 +55,14 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
 
   /**
    * Read static value from the field
+   *
    * @return object from the field
    * @throws IllegalStateException if the field is non static
    */
   public Object getStaticValue() {
     if ((this.flags & ACC_STATIC) == 0) {
       throw new IllegalStateException("Field '" + this.name + "' is not static");
-    }
-    else {
+    } else {
       return this.staticValue;
     }
   }
@@ -72,17 +71,22 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
     this.declaringClass = declaringClass;
     int theConstantValueIndex = -1;
     this.staticValue = null;
+    
     // flags
     this.flags = inStream.readUnsignedShort();
+    
     // name
     final int nameIndex = inStream.readUnsignedShort();
     this.name = (String) declaringClass.getConstantPool().getItemAt(nameIndex).asString();
+    
     // type
     final int typeIndex = inStream.readUnsignedShort();
     this.signature = (String) declaringClass.getConstantPool().getItemAt(typeIndex).asString();
     this.fieldUID = (nameIndex << 16) | typeIndex;
+    
     // attributes
     int attributesCounter = inStream.readUnsignedShort();
+    
     while (--attributesCounter >= 0) {
       final String attrName = (String) declaringClass.getConstantPool().getItemAt(inStream.readUnsignedShort()).asString();
       if (ATRNAME_CONSTANTVALUE.equals(attrName)) {
@@ -91,15 +95,14 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
           throw new IOException("Wrong size for constant value attribute [" + attributeSize + ']');
         }
         theConstantValueIndex = inStream.readUnsignedShort();
-      }
-      else {
+      } else {
         // ignore all other attributes
-        JJJVMImplUtils.skip(inStream,inStream.readInt());
+        JJJVMImplUtils.skip(inStream, inStream.readInt());
       }
     }
 
     this.constantIndexInPool = theConstantValueIndex;
-    if ((this.flags & ACC_STATIC) != 0 && theConstantValueIndex>=0) {
+    if ((this.flags & ACC_STATIC) != 0 && theConstantValueIndex >= 0) {
       this.staticValue = this.getConstantValue();
     }
   }
@@ -111,8 +114,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
   public Object get(final JJJVMObject instance) {
     if ((flags & ACC_STATIC) == 0) {
       return instance.getFieldValue(this.name, true);
-    }
-    else {
+    } else {
       return this.staticValue;
     }
   }
@@ -120,8 +122,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
   public void set(final JJJVMObject instance, final Object value) {
     if ((flags & ACC_STATIC) == 0) {
       instance.setFieldValue(this.name, value, true);
-    }
-    else {
+    } else {
       this.staticValue = value;
     }
   }
@@ -150,7 +151,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
   }
 
   @Override
-  public String toString(){
-    return this.getClass().getCanonicalName()+'['+this.declaringClass.getName()+'#'+this.getName()+' '+this.getSignature()+']';
+  public String toString() {
+    return this.getClass().getCanonicalName() + '[' + this.declaringClass.getName() + '#' + this.getName() + ' ' + this.getSignature() + ']';
   }
 }

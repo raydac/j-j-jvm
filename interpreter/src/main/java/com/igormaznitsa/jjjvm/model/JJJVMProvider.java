@@ -16,10 +16,10 @@
 package com.igormaznitsa.jjjvm.model;
 
 /**
- * Interface describes service which allows to JJJVMClass to get needed
+ * Interface describes service which allows JJJVMClass to get needed
  * information and do some business.
  *
- * @see com.igormaznitsa.jjjvm.impl.JSEProviderImpl
+ * @see com.igormaznitsa.jjjvm.impl.jse.JSEProviderImpl
  */
 public interface JJJVMProvider extends JJJVMConstants {
 

@@ -7,11 +7,13 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 public abstract class JJJVMImplUtils {
-  private JJJVMImplUtils(){}
-  
-  public static void makeAccessible(final AccessibleObject obj){
-    if (obj!=null && obj.isAccessible()){
-      AccessController.doPrivileged(new PrivilegedAction(){
+
+  private JJJVMImplUtils() {
+  }
+
+  public static void makeAccessible(final AccessibleObject obj) {
+    if (obj != null && obj.isAccessible()) {
+      AccessController.doPrivileged(new PrivilegedAction() {
         public Object run() {
           obj.setAccessible(true);
           return null;
@@ -19,8 +21,16 @@ public abstract class JJJVMImplUtils {
       });
     }
   }
-  
+
+  public static void assertNotNull(final String text, final Object value) {
+    if (value == null) {
+      throw new NullPointerException(text);
+    }
+  }
+
   public static void skip(final DataInputStream stream, final int bytesToSkip) throws IOException {
-    if (stream.skipBytes(bytesToSkip)!=bytesToSkip) throw new IOException("Can't skip "+bytesToSkip+" byte(s)");
+    if (stream.skipBytes(bytesToSkip) != bytesToSkip) {
+      throw new IOException("Can't skip " + bytesToSkip + " byte(s)");
+    }
   }
 }

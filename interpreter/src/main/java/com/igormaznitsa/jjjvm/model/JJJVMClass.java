@@ -18,29 +18,45 @@ package com.igormaznitsa.jjjvm.model;
 import java.util.Map;
 
 public interface JJJVMClass extends JJJVMConstants {
+
   JJJVMProvider getProvider();
+
   JJJVMConstantPool getConstantPool();
 
   JJJVMMethod findMethod(String methodName, String methodSignature) throws Throwable;
+
   JJJVMField findField(String fieldName) throws Throwable;
+
   JJJVMMethod findDeclaredMethod(String methodName, String methodSignature);
+
   JJJVMField findDeclaredField(String fieldName);
+
   Map<String, JJJVMField> getAllDeclaredFields();
+
   Map<String, JJJVMMethod> getAllDeclaredMethods();
 
   Object resolveSuperclass() throws Throwable;
+
   String[] getImplementedInterfaceNames();
+
   int getClassFormatVersion();
+
   int getFlags();
+
   String getName();
+
   String getClassName();
+
   String getCanonicalName();
+
   String getSourceFileName();
-  
+
   Object readStaticField(String fieldName) throws Throwable;
-  void   writeStaticField(String fieldName, Object value) throws Throwable;
+
+  void writeStaticField(String fieldName, Object value) throws Throwable;
 
   JJJVMObject newInstance(boolean callDefaultConstructor) throws Throwable;
+
   JJJVMObject newInstance(String constructorSignature, Object[] args, Object[] stack, Object[] localVariables) throws Throwable;
 
   JJJVMObject initInstanceFields(JJJVMObject obj) throws Throwable;

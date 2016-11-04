@@ -53,7 +53,7 @@ public interface JJJVMConstants {
   public static final String ATTRNAME_SOURCEFILE = "SourceFile";
 
   public static final String[] EMPTY_STRING_ARRAY = new String[0];
-  public static final JJJVMInnerClassRecord [] EMPTY_INNERCLASS_ARRAY = new JJJVMInnerClassRecord[0];
-  public static final JJJVMTryCatchRecord [] EMPTY_CATCBLOCK_ARRAY = new JJJVMTryCatchRecord[0];
+  public static final JJJVMInnerClassRecord[] EMPTY_INNERCLASS_ARRAY = new JJJVMInnerClassRecord[0];
+  public static final JJJVMTryCatchRecord[] EMPTY_CATCBLOCK_ARRAY = new JJJVMTryCatchRecord[0];
 
 }

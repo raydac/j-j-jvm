@@ -30,7 +30,7 @@ import java.util.Map;
 
 public abstract class JJJVMInterpreter implements JJJVMConstants {
 
-  protected static final Map<String, Integer> numberOfArgumentsCache = new HashMap<String, Integer>();
+  protected static final Map<String, Integer> CACHED_NUMBER_OF_ARGS = new HashMap<String, Integer>();
 
   /**
    * Invoke a method.
@@ -63,8 +63,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
         // it's a static method
         // we need to use class as the synchro object
         syncObject = caller;
-      }
-      else {
+      } else {
         // it's a nonstatic method
         // we need to use the instance as the synchro object
         syncObject = instance;
@@ -73,8 +72,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
       synchronized (syncObject) {
         return _invoke(caller, instance, methodToInvoke, args, 0, stack, vars);
       }
-    }
-    else {
+    } else {
       // it's not a synchronized method and we just call inside invoke function
       return _invoke(caller, instance, methodToInvoke, args, 0, stack, vars);
     }
@@ -91,13 +89,11 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
     if (stack == null) {
       localMethodStack = new Object[method.getMaxStackDepth()];
       regSP = 0;
-    }
-    else {
+    } else {
       if (stack.length - initialStackOffset >= method.getMaxStackDepth()) {
         localMethodStack = stack;
         regSP = initialStackOffset;
-      }
-      else {
+      } else {
         localMethodStack = new Object[method.getMaxStackDepth()];
         regSP = 0;
       }
@@ -394,8 +390,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             if (arrayObj instanceof boolean[]) {
               final boolean[] boolArray = (boolean[]) arrayObj;
               localMethodStack[regSP++] = boolArray[index] ? 1 : 0;
-            }
-            else {
+            } else {
               // byte
               final byte[] byteArray = (byte[]) arrayObj;
               localMethodStack[regSP++] = (int) byteArray[index];
@@ -535,8 +530,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             Object array = localMethodStack[--regSP];
             if (array instanceof boolean[]) {
               ((boolean[]) array)[index] = (Boolean) value;
-            }
-            else {
+            } else {
               ((byte[]) array)[index] = ((Integer) value).byteValue();
             }
           }
@@ -550,8 +544,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             if (instruction == 85) {
               final char[] arr = (char[]) localMethodStack[--regSP];
               arr[index] = (Character) value;
-            }
-            else {
+            } else {
               final short[] arr = (short[]) localMethodStack[--regSP];
               arr[index] = (Short) value;
             }
@@ -1035,8 +1028,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             final float a = ((Float) localMethodStack[index]);
             if (Float.isNaN(a) || Float.isNaN(b)) {
               localMethodStack[index] = instruction == 150 ? 1 : -1;
-            }
-            else {
+            } else {
               localMethodStack[index] = Float.compare(a, b);
             }
           }
@@ -1054,8 +1046,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
 
             if (Double.isNaN(a) || Double.isNaN(b)) {
               localMethodStack[index] = instruction == 152 ? 1 : -1;
-            }
-            else {
+            } else {
               localMethodStack[index] = Double.compare(a, b);
             }
           }
@@ -1194,8 +1185,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             if (instruction == 168) {
               jump = readShortValueFromArray(methodBytecodes, regPC);
               regPC += 2;
-            }
-            else {
+            } else {
               jump = readIntFromArray(methodBytecodes, regPC);
               regPC += 4;
             }
@@ -1254,8 +1244,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
                 regPC += 4;
                 offset = readIntFromArray(methodBytecodes, regPC);
                 break;
-              }
-              else {
+              } else {
                 regPC += 8;
               }
             }
@@ -1302,20 +1291,17 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
                   localMethodStack[regSP++] = null;
                 }
                 localMethodStack[regSP++] = value;
-              }
-              else {
+              } else {
                 thefield.setStaticValue(localMethodStack[--regSP]);
               }
-            }
-            else {
+            } else {
               if (instruction == 178) {
                 value = provider.getStatic(caller, className, fieldName, fieldSignature);
                 if (isCategory2(value)) {
                   localMethodStack[regSP++] = null;
                 }
                 localMethodStack[regSP++] = value;
-              }
-              else {
+              } else {
                 value = localMethodStack[--regSP];
                 provider.setStatic(caller, className, fieldName, fieldSignature, value);
               }
@@ -1341,13 +1327,11 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
                   localMethodStack[regSP++] = null;
                 }
                 localMethodStack[regSP++] = result;
-              }
-              else {
+              } else {
                 final String fieldSignature = fieldRef.getSignature();
                 localMethodStack[regSP++] = provider.get(caller, value, fieldName, fieldSignature);
               }
-            }
-            else {
+            } else {
               // PUT
               final Object value = localMethodStack[regSP - 1];
               localMethodStack[--regSP] = null;
@@ -1360,8 +1344,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
 
               if (objectINstance instanceof JJJVMObject) {
                 ((JJJVMObject) objectINstance).setFieldValue(fieldName, value, true);
-              }
-              else {
+              } else {
                 final String fieldSignature = fieldRef.getSignature();
                 provider.set(caller, objectINstance, fieldName, fieldSignature, value);
               }
@@ -1406,17 +1389,15 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             if (instruction == 185) {
               // INOKEINTERFACE
               resolvedKlazz = objInstance instanceof JJJVMObject ? ((JJJVMObject) objInstance).getDeclaringClass() : provider.resolveClass(objInstance.getClass().getName().replace('.', '/'));
-            }
-            else {
+            } else {
               resolvedKlazz = klazzName.equals(caller.getClassName()) ? caller : provider.resolveClass(klazzName);
             }
-            Object result = null;
+            final Object result;
             if (resolvedKlazz instanceof JJJVMClass) {
               final JJJVMMethod foundMethod = ((JJJVMClass) resolvedKlazz).findMethod(methodName, signature);
               final JJJVMClass jjjvmclazz = foundMethod.getDeclaringClass();
               result = _invoke(jjjvmclazz, (JJJVMObject) objInstance, foundMethod, argsArray, regSP, localMethodStack, null);
-            }
-            else {
+            } else {
               result = provider.invoke(caller, objInstance, klazzName, methodName, signature, argsArray);
               if (result != null && "<init>".equals(methodName)) {
                 // replace all instances by new one
@@ -1521,13 +1502,14 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           case 191: // ATWHROW
           {
             final Object throwable = localMethodStack[--regSP];
+            
             if (throwable == null) {
               throw new NullPointerException("ATHROW NULL");
             }
+            
             if (throwable instanceof Throwable) {
               throw (Throwable) throwable;
-            }
-            else {
+            } else {
               provider.doThrow(caller, throwable);
             }
           }
@@ -1547,12 +1529,10 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
                   throw new ClassCastException(object.getClass().getName() + " -> " + rawClassName);
                 }
               }
-            }
-            else {
+            } else {
               if (object == null) {
                 localMethodStack[index] = 0;
-              }
-              else {
+              } else {
                 localMethodStack[index] = provider.checkCast(caller, rawClassName, object) ? 1 : 0;
               }
             }
@@ -1567,8 +1547,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
 
             if (obj instanceof JJJVMObject) {
               ((JJJVMObject) obj).lock();
-            }
-            else {
+            } else {
               provider.doMonitor(caller, obj, true);
             }
           }
@@ -1582,8 +1561,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
 
             if (obj instanceof JJJVMObject) {
               ((JJJVMObject) obj).unlock();
-            }
-            else {
+            } else {
               provider.doMonitor(caller, obj, false);
             }
           }
@@ -1614,10 +1592,10 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           {
             final Object obj = localMethodStack[--regSP];
             final boolean result = instruction == 198 ? obj == null : obj != null;
+            
             if (result) {
               regPC = lastPC + readShortValueFromArray(methodBytecodes, regPC);
-            }
-            else {
+            } else {
               regPC += 2;
             }
           }
@@ -1640,6 +1618,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
         for (final JJJVMTryCatchRecord r : method.getTryCatchRecords()) {
           if (r.isActiveForAddress(lastPC)) {
             final String exceptionClassName = r.getJvmFormattedClassName();
+            
             if (exceptionClassName == null) {
               // it process any exception, may be it is finally
               record = r;
@@ -1657,8 +1636,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
         if (record != null) {
           localMethodStack[regSP++] = thr;
           regPC = record.getCodeAddress();
-        }
-        else {
+        } else {
           throw thr;
         }
       }
@@ -1666,11 +1644,10 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
   }
 
   private static int extractArgsNumber(final String methodSignature) {
-    synchronized (numberOfArgumentsCache) {
-      if (numberOfArgumentsCache.containsKey(methodSignature)) {
-        return numberOfArgumentsCache.get(methodSignature);
-      }
-      else {
+    synchronized (CACHED_NUMBER_OF_ARGS) {
+      if (CACHED_NUMBER_OF_ARGS.containsKey(methodSignature)) {
+        return CACHED_NUMBER_OF_ARGS.get(methodSignature);
+      } else {
         final int len = methodSignature.length();
         boolean objFlag = false;
         int counter = 0;
@@ -1703,7 +1680,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
         if (work) {
           throw new IllegalArgumentException("Wrong signature [" + methodSignature + ']');
         }
-        numberOfArgumentsCache.put(methodSignature, counter);
+        CACHED_NUMBER_OF_ARGS.put(methodSignature, counter);
         return counter;
       }
     }
