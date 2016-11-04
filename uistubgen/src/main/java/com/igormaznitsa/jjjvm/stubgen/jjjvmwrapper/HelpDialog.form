@@ -26,7 +26,7 @@
           <Group type="102" alignment="1" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="1" attributes="0">
-                  <Component id="jScrollPane1" alignment="0" pref="442" max="32767" attributes="0"/>
+                  <Component id="jScrollPane1" alignment="0" pref="638" max="32767" attributes="0"/>
                   <Component id="buttonClose" alignment="1" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
@@ -59,7 +59,7 @@
             <Property name="columns" type="int" value="20"/>
             <Property name="lineWrap" type="boolean" value="true"/>
             <Property name="rows" type="int" value="5"/>
-            <Property name="text" type="java.lang.String" value="Shortly&#xa;-----------------&#xa;   This utility allows to generate a java class source that implements the MJVMProcessor interface. The generated class can be used to process calls from a MJVMClass object. The generated class is not fully completed but it really helps to process classes which have a lot of class members.&#xa;&#xa;How it works?&#xa;-----------------&#xa;  It is very easy. You need to place all classes, which you want to use, at the tree panel. The tree contains all classes which will be used to generate the processor class source, of course only their non-private members will be used for the process (also I do not recommend to use the utility for inside anonymous classes, it is no so smart to dig very hard cases).&#xa;  You can add either detached classes or full packages (JAR or ZIP) into the tree with the &apos;+&apos; button. The &apos;-&apos; button allows to remove selected items from the tree and the &apos;x&apos; button allows to clear whole tree.&#xa;  When you have completed your class list, you can generate the java source from it with the menu &apos;File-&gt;Generate stub&apos;."/>
+            <Property name="text" type="java.lang.String" value="Shortly&#xa;-----------------&#xa;   The Tool generates a java class source that extends JSEProviderImpl. The Class can be used to process calls from a MJVMClass object. The generated class is not fully completed but it really helps to process classes which have a lot of class members.&#xa;&#xa;How it works?&#xa;-----------------&#xa;  It is very easy. You need to place all classes, which you want to use, at the tree panel. The tree contains all classes which will be used to generate the processor class source, of course only their non-private members will be used for the process (also I do not recommend to use the utility for inside anonymous classes, it is no so smart to dig very hard cases).&#xa;  You can add either detached classes or full packages (JAR or ZIP) into the tree with the &apos;+&apos; button. The &apos;-&apos; button allows to remove selected items from the tree and the &apos;x&apos; button allows to clear whole tree.&#xa;  When you have completed your class list, you can generate the java source from it with the menu &apos;File-&gt;Generate stub&apos;."/>
             <Property name="wrapStyleWord" type="boolean" value="true"/>
           </Properties>
         </Component>

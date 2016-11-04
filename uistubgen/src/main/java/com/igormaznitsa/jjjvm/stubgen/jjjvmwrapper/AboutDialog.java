@@ -60,7 +60,7 @@ public class AboutDialog extends javax.swing.JDialog
     textArea.setColumns(20);
     textArea.setLineWrap(true);
     textArea.setRows(5);
-    textArea.setText("MJVM Stub Generator utility\nVersion: ${version}\n--------------------------------------------------------------\nAuthor: Igor A. Maznitsa\n\nThe utility is absolute free and can be used without any resstrictions.\nNew version of the utility can be found on http://www.igormaznitsa.com");
+    textArea.setText("MJVM Stub Generator utility\nVersion: ${version}\n--------------------------------------------------------------\nAuthor: Igor A. Maznitsa\n\nThe utility is absolute free and can be used without any resstrictions.\nNew version of the utility can be found on https://github.com/raydac/j-j-jvm");
     textArea.setWrapStyleWord(true);
     jScrollPane1.setViewportView(textArea);
 

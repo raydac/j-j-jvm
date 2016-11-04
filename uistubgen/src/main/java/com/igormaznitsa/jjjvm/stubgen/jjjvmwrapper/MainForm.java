@@ -162,6 +162,7 @@ public class MainForm extends javax.swing.JFrame implements WindowListener, Tree
     p_LeftPanel.setLayout(new java.awt.BorderLayout());
 
     treeClasses.setRootVisible(false);
+    treeClasses.setShowsRootHandles(true);
     jScrollPane1.setViewportView(treeClasses);
 
     p_LeftPanel.add(jScrollPane1, java.awt.BorderLayout.CENTER);
@@ -207,8 +208,6 @@ public class MainForm extends javax.swing.JFrame implements WindowListener, Tree
     p_LeftPanel.add(toolBarTreeButtons, java.awt.BorderLayout.NORTH);
 
     splitPane.setLeftComponent(p_LeftPanel);
-
-    panelEmpty.setPreferredSize(new java.awt.Dimension(500, 400));
 
     javax.swing.GroupLayout panelEmptyLayout = new javax.swing.GroupLayout(panelEmpty);
     panelEmpty.setLayout(panelEmptyLayout);
@@ -306,8 +305,7 @@ public class MainForm extends javax.swing.JFrame implements WindowListener, Tree
           if (selectedFilters[0].equals(FILTER_CLASS)) {
             // class
             this.currentStorage.addClassFromFile(file);
-          }
-          else {
+          } else {
             // jar or zip
             this.currentStorage.addArchive(file);
           }
@@ -360,20 +358,17 @@ public class MainForm extends javax.swing.JFrame implements WindowListener, Tree
       final ClassItem[] classItems = currentStorage.getAllClassItems();
       if (classItems.length == 0) {
         JOptionPane.showMessageDialog(this, "There is not any class to make stub", "Can't make stub", JOptionPane.WARNING_MESSAGE);
-      }
-      else {
+      } else {
         final GenerateStubDialog stubGeneratingDialog = new GenerateStubDialog(this);
         String result = stubGeneratingDialog.process(classItems);
         if (result == null) {
           result = stubGeneratingDialog.getError();
           if (result != null) {
             JOptionPane.showMessageDialog(this, "Error during operation: " + result, "Error", JOptionPane.ERROR_MESSAGE);
+          } else {
+            System.out.println("Operation canceled");
           }
-          else {
-            System.out.println("Operation was canceled");
-          }
-        }
-        else {
+        } else {
           File fileToSave = Utils.selectFileForSave(this, FILTER_JAVA, "Save generated file", lastSavedStub);
 
           if (fileToSave != null) {
@@ -388,12 +383,11 @@ public class MainForm extends javax.swing.JFrame implements WindowListener, Tree
                 className = fileName;
                 fileName += ".java";
                 fileToSave = new File(fileToSave.getParentFile(), fileName);
-              }
-              else {
+              } else {
                 className = fileName.substring(0, lastDotIndex);
               }
 
-              result = result.replace((CharSequence) GenerateStubDialog.MACROS_CLASSNAME, (CharSequence) className);
+              result = result.replace("${className}", className);
 
               printStream = new PrintStream(fileToSave);
               printStream.print(result);
@@ -495,13 +489,11 @@ public class MainForm extends javax.swing.JFrame implements WindowListener, Tree
   public synchronized void selectObjects(final Object[] objects) {
     if (objects == null || objects.length == 0 || objects.length > 1) {
       this.panelRight.setViewportView(this.panelEmpty);
-    }
-    else {
+    } else {
       if (objects[0] instanceof ClassItem) {
         this.classInfoPanel.setModel((ClassItem) objects[0]);
         this.panelRight.setViewportView(this.classInfoPanel);
-      }
-      else {
+      } else {
         this.panelRight.setViewportView(this.panelEmpty);
       }
     }

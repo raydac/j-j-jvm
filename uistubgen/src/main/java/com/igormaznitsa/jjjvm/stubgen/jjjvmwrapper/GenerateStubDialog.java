@@ -27,14 +27,8 @@ import org.apache.bcel.classfile.Method;
 
 public class GenerateStubDialog extends javax.swing.JDialog implements Runnable {
 
-  public static final String MACROS_CLASSNAME = "%%CLASS_NAME%%";
-  public static final String MACROS_STATICFIELDS = "%%STATIC_FIELDS%%";
-  public static final String MACROS_DYNAMICFIELDS = "%%DYNAMIC_FIELDS%%";
-  public static final String MACROS_STATICMETHODS = "%%STATIC_METHODS%%";
-  public static final String MACROS_DYNAMICMETHODS = "%%DYNAMIC_METHODS%%";
-  public static final String MACROS_NEWINSTANCES = "%%NEW_INSTANCES%%";
+  private static final long serialVersionUID = -2157306308008601632L;
 
-  public static final long serialVersionUID = 121273223l;
   protected final AtomicReference<String> errorMessage = new AtomicReference<String>();
   protected final AtomicReference<ClassItem[]> classItems = new AtomicReference<ClassItem[]>();
   protected final AtomicReference<String> result = new AtomicReference<String>();
@@ -132,15 +126,13 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
   @Override
   public void run() {
     try {
-      final String SPACER = "\t";
-
       Thread.sleep(500);
       String filledTemplate = new String(Utils.loadResource("template/template.txt"), Charset.forName("UTF-8"));
 
-      SimpleDateFormat p_date = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
+      SimpleDateFormat p_date = new SimpleDateFormat("d MMM yyyy HH:mm:ss");
       String s_date = p_date.format(new Date());
 
-      filledTemplate = filledTemplate.replace((CharSequence) "%%DATETIME%%", (CharSequence) s_date).replace((CharSequence) "%%GENERATOR%%", (CharSequence) (main.APPLICATION + " " + main.VERSION));
+      filledTemplate = filledTemplate.replace((CharSequence) "${dateTime}", (CharSequence) s_date).replace((CharSequence) "${generator}", (CharSequence) (main.APPLICATION + " " + main.VERSION));
 
       if (!this.atWork.get()) {
         return;
@@ -154,11 +146,11 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
 
       boolean classAdded = false;
 
-      final String MACRO_NEWINSTANCE = "$if (_class.equals(\"%%SUNCLASS_NAME%%\")) s_class = \"%%CLASS_NAME%%\";\r\n".replace((CharSequence) "$", (CharSequence) SPACER);
-      final String MACRO_CLASSNAMEHEAD = "$//--------------------------------------------------\r\n$// %%CLASS_NAME%%\r\n$//--------------------------------------------------\r\n".replace((CharSequence) "$", (CharSequence) SPACER);
+      final String MACRO_CLASSNAMEHEAD = replaceSpacerAndEOL("//--------------------------------------------------\n\t// ${className}\n\t//--------------------------------------------------\n");
+      final String MACRO_NEWINSTANCE = replaceSpacerAndEOL("\tif (classQualifiedName.equals(\"${qualifiedClassName}\")) normalClassName = \"${className}\";\n");
 
-      final String MACRO_METHOD = "$if (_method.equals(\"%%METHOD_NAME%%\"))\r\n${\r\n$$throw new UnsupportedOperationException(\"%%NORMALMETHOD_NAME%%\");\r\n$}\r\n".replace((CharSequence) "$", (CharSequence) SPACER);
-      final String MACRO_FIELD = "$if (_fieldidentifier.equals(\"%%FIELD_NAME%%\"))\r\n${\r\n$$throw new UnsupportedOperationException(\"%%NORMALFIELD_NAME%%\");\r\n$}\r\n".replace((CharSequence) "$", (CharSequence) SPACER);
+      final String MACRO_METHOD = replaceSpacerAndEOL("\tif (methodId.equals(\"${methodName}\"))\n\t{\n\t\tthrow new UnsupportedOperationException(\"${normalMethodName}\");\n\t}\n");
+      final String MACRO_FIELD = replaceSpacerAndEOL("\tif (fieldId.equals(\"${fieldName}\"))\n\t{\n\t\tthrow new UnsupportedOperationException(\"${normalFieldName}\");\n\t}\n");
 
       for (int li = 0; li < this.classItems.get().length; li++) {
         if (!this.atWork.get()) {
@@ -167,17 +159,17 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
 
         final ClassItem klazz = this.classItems.get()[li];
         final String className = klazz.getJavaClass().getClassName();
-        final String classHeader = MACRO_CLASSNAMEHEAD.replace((CharSequence) "%%CLASS_NAME%%", (CharSequence) className);
+        final String classHeader = MACRO_CLASSNAMEHEAD.replace("${className}", className);
         final String jvmFormattedClassName = klazz.getJavaClass().getClassName().replace('.', '/');
 
         final JavaClass jclazz = klazz.getJavaClass();
         if (!jclazz.isAbstract() && !jclazz.isInterface()) {
           if (classAdded) {
-            newInstancesBuffer.append(SPACER + "else\r\n");
+            newInstancesBuffer.append(replaceSpacerAndEOL("\telse\n"));
           }
 
-          String str = MACRO_NEWINSTANCE.replace((CharSequence) "%%CLASS_NAME%%", (CharSequence) className);
-          str = str.replace((CharSequence) "%%SUNCLASS_NAME%%", (CharSequence) jvmFormattedClassName);
+          String str = MACRO_NEWINSTANCE.replace("${className}", className);
+          str = str.replace("${qualifiedClassName}", jvmFormattedClassName);
 
           newInstancesBuffer.append(str);
 
@@ -203,12 +195,11 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
 
             final String fieldId = makeFieldName(jvmFormattedClassName, field);
             if (i > 0) {
-              staticFieldsBuffer.append(SPACER);
-              staticFieldsBuffer.append("else\r\n");
+              staticFieldsBuffer.append(replaceSpacerAndEOL("\telse\n"));
             }
 
-            String str = MACRO_FIELD.replace((CharSequence) "%%FIELD_NAME%%", (CharSequence) fieldId);
-            str = str.replace((CharSequence) "%%NORMALFIELD_NAME%%", (CharSequence) fieldNrmalizedName);
+            String str = MACRO_FIELD.replace("${fieldName}", fieldId);
+            str = str.replace("${normalFieldName}", fieldNrmalizedName);
 
             staticFieldsBuffer.append(str);
           }
@@ -229,12 +220,11 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
             final String fieldId = makeFieldName(jvmFormattedClassName, field);
 
             if (i > 0) {
-              synamicFieldsBuffer.append(SPACER);
-              synamicFieldsBuffer.append("else\r\n");
+              synamicFieldsBuffer.append(replaceSpacerAndEOL("\telse\n"));
             }
 
-            String s_str = MACRO_FIELD.replace((CharSequence) "%%FIELD_NAME%%", (CharSequence) fieldId);
-            s_str = s_str.replace((CharSequence) "%%NORMALFIELD_NAME%%", (CharSequence) fieldNormalName);
+            String s_str = MACRO_FIELD.replace("${fieldName}", fieldId);
+            s_str = s_str.replace("${normalFieldName}", fieldNormalName);
 
             synamicFieldsBuffer.append(s_str);
           }
@@ -251,16 +241,15 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
 
             final Method p_method = staticMethods[i];
 
-            final String methodID = makeMethodName(jvmFormattedClassName, p_method);
+            final String methodId = makeMethodName(jvmFormattedClassName, p_method);
             final String methodNormalName = method2str(p_method);
 
             if (i > 0) {
-              staticMethodsBuffer.append(SPACER);
-              staticMethodsBuffer.append("else\r\n");
+              staticMethodsBuffer.append(replaceSpacerAndEOL("\telse\n"));
             }
 
-            String str = MACRO_METHOD.replace((CharSequence) "%%METHOD_NAME%%", (CharSequence) methodID);
-            str = str.replace((CharSequence) "%%NORMALMETHOD_NAME%%", (CharSequence) methodNormalName);
+            String str = MACRO_METHOD.replace("${methodName}", methodId);
+            str = str.replace("${normalMethodName}", methodNormalName);
 
             staticMethodsBuffer.append(str);
           }
@@ -280,12 +269,11 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
             final String methodNormalName = method2str(method);
 
             if (i > 0) {
-              dynamicMethodsBuffer.append(SPACER);
-              dynamicMethodsBuffer.append("else\r\n");
+              dynamicMethodsBuffer.append(replaceSpacerAndEOL("\telse\n"));
             }
 
-            String str = MACRO_METHOD.replace((CharSequence) "%%METHOD_NAME%%", (CharSequence) methodId);
-            str = str.replace((CharSequence) "%%NORMALMETHOD_NAME%%", (CharSequence) methodNormalName);
+            String str = MACRO_METHOD.replace("${methodName}", methodId);
+            str = str.replace("${normalMethodName}", methodNormalName);
 
             dynamicMethodsBuffer.append(str);
           }
@@ -293,11 +281,13 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
 
       }
 
-      filledTemplate = filledTemplate.replace((CharSequence) MACROS_DYNAMICFIELDS, (CharSequence) synamicFieldsBuffer.toString());
-      filledTemplate = filledTemplate.replace((CharSequence) MACROS_DYNAMICMETHODS, (CharSequence) dynamicMethodsBuffer.toString());
-      filledTemplate = filledTemplate.replace((CharSequence) MACROS_NEWINSTANCES, (CharSequence) newInstancesBuffer.toString());
-      filledTemplate = filledTemplate.replace((CharSequence) MACROS_STATICFIELDS, (CharSequence) staticFieldsBuffer.toString());
-      filledTemplate = filledTemplate.replace((CharSequence) MACROS_STATICMETHODS, (CharSequence) staticMethodsBuffer.toString());
+      filledTemplate = filledTemplate.replace("${nonStaticFields}", synamicFieldsBuffer.toString());
+      filledTemplate = filledTemplate.replace("${nonStaticMethods}", dynamicMethodsBuffer.toString());
+      filledTemplate = filledTemplate.replace("${newInstances}", "");//newInstancesBuffer.toString());
+      filledTemplate = filledTemplate.replace("${staticFields}", staticFieldsBuffer.toString());
+      filledTemplate = filledTemplate.replace("${staticMethods}", staticMethodsBuffer.toString());
+      filledTemplate = filledTemplate.replace("${newMultidimensionObjectArray}", "");
+      filledTemplate = filledTemplate.replace("${newObjectArray}", "");
 
       this.result.set(filledTemplate);
     }
@@ -312,6 +302,10 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
     finally {
       setVisible(false);
     }
+  }
+
+  private static String replaceSpacerAndEOL(final String str) {
+    return str.replace("\t", "    ").replace("\n", System.getProperty("line.separator","\n"));
   }
 
   protected String makeFieldName(final String className, final Field field) {
@@ -337,8 +331,7 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
         if (field.isStatic()) {
           fieldSet.add(field);
         }
-      }
-      else {
+      } else {
         if (!field.isStatic()) {
           fieldSet.add(field);
         }
@@ -372,8 +365,7 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
         if (method.isStatic()) {
           methodSet.add(method);
         }
-      }
-      else {
+      } else {
         if (!method.isStatic()) {
           methodSet.add(method);
         }
@@ -388,11 +380,9 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
 
     if (field.isPrivate()) {
       modifier = "private ";
-    }
-    else if (field.isProtected()) {
+    } else if (field.isProtected()) {
       modifier = "protected ";
-    }
-    else if (field.isPublic()) {
+    } else if (field.isPublic()) {
       modifier = "public ";
     }
 
@@ -416,11 +406,9 @@ public class GenerateStubDialog extends javax.swing.JDialog implements Runnable 
 
     if (method.isPrivate()) {
       modifier = "private ";
-    }
-    else if (method.isProtected()) {
+    } else if (method.isProtected()) {
       modifier = "protected ";
-    }
-    else if (method.isPublic()) {
+    } else if (method.isPublic()) {
       modifier = "public ";
     }
 

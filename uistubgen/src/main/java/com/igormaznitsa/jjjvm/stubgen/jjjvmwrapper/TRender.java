@@ -59,8 +59,7 @@ public class TRender extends JLabel implements TreeCellRenderer {
       setOpaque(true);
       setForeground(colorSelectedForeground);
       setBackground(colorSelectedBackground);
-    }
-    else {
+    } else {
       setOpaque(false);
       setForeground(colorForeground);
       setBackground(colorBackground);
@@ -69,16 +68,13 @@ public class TRender extends JLabel implements TreeCellRenderer {
     if (value instanceof Storage) {
       setIcon(iconStorage);
       setText(str);
-    }
-    else if (value instanceof PackageItem) {
+    } else if (value instanceof PackageItem) {
       setIcon(iconPackage);
       setText(str);
-    }
-    else if (value instanceof ClassItem) {
+    } else if (value instanceof ClassItem) {
       setIcon(iconClass);
       setText(str);
-    }
-    else {
+    } else {
       setIcon(null);
       setText(str);
     }

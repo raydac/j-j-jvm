@@ -51,7 +51,7 @@ public class HelpDialog extends javax.swing.JDialog
     textArea.setColumns(20);
     textArea.setLineWrap(true);
     textArea.setRows(5);
-    textArea.setText("Shortly\n-----------------\n   This utility allows to generate a java class source that implements the MJVMProcessor interface. The generated class can be used to process calls from a MJVMClass object. The generated class is not fully completed but it really helps to process classes which have a lot of class members.\n\nHow it works?\n-----------------\n  It is very easy. You need to place all classes, which you want to use, at the tree panel. The tree contains all classes which will be used to generate the processor class source, of course only their non-private members will be used for the process (also I do not recommend to use the utility for inside anonymous classes, it is no so smart to dig very hard cases).\n  You can add either detached classes or full packages (JAR or ZIP) into the tree with the '+' button. The '-' button allows to remove selected items from the tree and the 'x' button allows to clear whole tree.\n  When you have completed your class list, you can generate the java source from it with the menu 'File->Generate stub'.");
+    textArea.setText("Shortly\n-----------------\n   The Tool generates a java class source that extends JSEProviderImpl. The Class can be used to process calls from a MJVMClass object. The generated class is not fully completed but it really helps to process classes which have a lot of class members.\n\nHow it works?\n-----------------\n  It is very easy. You need to place all classes, which you want to use, at the tree panel. The tree contains all classes which will be used to generate the processor class source, of course only their non-private members will be used for the process (also I do not recommend to use the utility for inside anonymous classes, it is no so smart to dig very hard cases).\n  You can add either detached classes or full packages (JAR or ZIP) into the tree with the '+' button. The '-' button allows to remove selected items from the tree and the 'x' button allows to clear whole tree.\n  When you have completed your class list, you can generate the java source from it with the menu 'File->Generate stub'.");
     textArea.setWrapStyleWord(true);
     jScrollPane1.setViewportView(textArea);
 
@@ -69,7 +69,7 @@ public class HelpDialog extends javax.swing.JDialog
       .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
         .addContainerGap()
         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-          .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 442, Short.MAX_VALUE)
+          .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 638, Short.MAX_VALUE)
           .addComponent(buttonClose))
         .addContainerGap())
     );

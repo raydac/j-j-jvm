@@ -68,7 +68,7 @@
             <Property name="columns" type="int" value="20"/>
             <Property name="lineWrap" type="boolean" value="true"/>
             <Property name="rows" type="int" value="5"/>
-            <Property name="text" type="java.lang.String" value="MJVM Stub Generator utility&#xa;Version: ${version}&#xa;--------------------------------------------------------------&#xa;Author: Igor A. Maznitsa&#xa;&#xa;The utility is absolute free and can be used without any resstrictions.&#xa;New version of the utility can be found on http://www.igormaznitsa.com"/>
+            <Property name="text" type="java.lang.String" value="MJVM Stub Generator utility&#xa;Version: ${version}&#xa;--------------------------------------------------------------&#xa;Author: Igor A. Maznitsa&#xa;&#xa;The utility is absolute free and can be used without any resstrictions.&#xa;New version of the utility can be found on https://github.com/raydac/j-j-jvm"/>
             <Property name="wrapStyleWord" type="boolean" value="true"/>
           </Properties>
         </Component>

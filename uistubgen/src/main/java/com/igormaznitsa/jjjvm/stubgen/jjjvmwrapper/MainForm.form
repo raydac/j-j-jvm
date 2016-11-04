@@ -119,6 +119,7 @@
                 <Component class="javax.swing.JTree" name="treeClasses">
                   <Properties>
                     <Property name="rootVisible" type="boolean" value="false"/>
+                    <Property name="showsRootHandles" type="boolean" value="true"/>
                   </Properties>
                 </Component>
               </SubComponents>
@@ -191,11 +192,6 @@
           <Layout class="org.netbeans.modules.form.compat2.layouts.support.JScrollPaneSupportLayout"/>
           <SubComponents>
             <Container class="javax.swing.JPanel" name="panelEmpty">
-              <Properties>
-                <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                  <Dimension value="[500, 400]"/>
-                </Property>
-              </Properties>
 
               <Layout>
                 <DimensionLayout dim="0">

@@ -22,6 +22,7 @@ import java.net.URL;
 import javax.swing.*;
 
 public class SplashDialog extends JDialog implements Runnable {
+
   private static final long serialVersionUID = 1812332099452703575L;
 
   protected final long delay;

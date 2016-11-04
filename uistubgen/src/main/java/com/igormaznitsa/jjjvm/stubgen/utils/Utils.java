@@ -34,8 +34,12 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.filechooser.FileFilter;
 
-public class Utils {
+public final class Utils {
 
+  private Utils(){
+    
+  }
+  
   public static final byte[] loadResource(final String resourcePath) throws IOException {
     InputStream inStream = null;
     try {
@@ -114,8 +118,7 @@ public class Utils {
           }
         }
       }
-    }
-    else {
+    } else {
       return null;
     }
   }
@@ -218,8 +221,7 @@ public class Utils {
     if (returnVal == JFileChooser.APPROVE_OPTION) {
       File p_file = chooser.getSelectedFile();
       return p_file;
-    }
-    else {
+    } else {
       return null;
     }
 
@@ -243,8 +245,7 @@ public class Utils {
     if (chooser.showDialog(parent, "Save") == JFileChooser.APPROVE_OPTION) {
       final File file = chooser.getSelectedFile();
       return file;
-    }
-    else {
+    } else {
       return null;
     }
   }
