@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Igor Maznitsa (http://www.igormaznitsa.com).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,48 +17,48 @@ package com.igormaznitsa.jjjvm.model;
 
 import java.util.Map;
 
-public interface JJJVMClass extends JJJVMConstants {
+public interface JJJVMClass  {
 
-  JJJVMProvider getProvider();
+    JJJVMProvider getProvider();
 
-  JJJVMConstantPool getConstantPool();
+    JJJVMConstantPool getConstantPool();
 
-  JJJVMMethod findMethod(String methodName, String methodSignature) throws Throwable;
+    JJJVMMethod findMethod(String methodName, String methodSignature) throws Throwable;
 
-  JJJVMField findField(String fieldName) throws Throwable;
+    JJJVMField findField(String fieldName) throws Throwable;
 
-  JJJVMMethod findDeclaredMethod(String methodName, String methodSignature);
+    JJJVMMethod findDeclaredMethod(String methodName, String methodSignature);
 
-  JJJVMField findDeclaredField(String fieldName);
+    JJJVMField findDeclaredField(String fieldName);
 
-  Map<String, JJJVMField> getAllDeclaredFields();
+    Map<String, JJJVMField> getAllDeclaredFields();
 
-  Map<String, JJJVMMethod> getAllDeclaredMethods();
+    Map<String, JJJVMMethod> getAllDeclaredMethods();
 
-  Object resolveSuperclass() throws Throwable;
+    Object resolveSuperclass() throws Throwable;
 
-  String[] getImplementedInterfaceNames();
+    String[] getImplementedInterfaceNames();
 
-  int getClassFormatVersion();
+    int getClassFormatVersion();
 
-  int getFlags();
+    int getFlags();
 
-  String getName();
+    String getName();
 
-  String getClassName();
+    String getClassName();
 
-  String getCanonicalName();
+    String getCanonicalName();
 
-  String getSourceFileName();
+    String getSourceFileName();
 
-  Object readStaticField(String fieldName) throws Throwable;
+    Object readStaticField(String fieldName) throws Throwable;
 
-  void writeStaticField(String fieldName, Object value) throws Throwable;
+    void writeStaticField(String fieldName, Object value) throws Throwable;
 
-  JJJVMObject newInstance(boolean callDefaultConstructor) throws Throwable;
+    JJJVMObject newInstance(boolean callDefaultConstructor) throws Throwable;
 
-  JJJVMObject newInstance(String constructorSignature, Object[] args, Object[] stack, Object[] localVariables) throws Throwable;
+    JJJVMObject newInstance(String constructorSignature, Object[] args, Object[] stack, Object[] localVariables) throws Throwable;
 
-  JJJVMObject initInstanceFields(JJJVMObject obj) throws Throwable;
+    JJJVMObject initInstanceFields(JJJVMObject obj) throws Throwable;
 
 }

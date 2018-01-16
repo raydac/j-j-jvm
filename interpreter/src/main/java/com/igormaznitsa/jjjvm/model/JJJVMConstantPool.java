@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Igor Maznitsa (http://www.igormaznitsa.com).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,25 +21,25 @@ package com.igormaznitsa.jjjvm.model;
  */
 public interface JJJVMConstantPool {
 
-  /**
-   * The Class containing the constant pool.
-   *
-   * @return the class containing the constant pool.
-   */
-  JJJVMClass getDeclaringClass();
+    /**
+     * The Class containing the constant pool.
+     *
+     * @return the class containing the constant pool.
+     */
+    JJJVMClass getDeclaringClass();
 
-  /**
-   * Number of elements in the class constant pool.
-   *
-   * @return number of elements in the constant pool.
-   */
-  int size();
+    /**
+     * Number of elements in the class constant pool.
+     *
+     * @return number of elements in the constant pool.
+     */
+    int size();
 
-  /**
-   * Get Constant pool item.
-   *
-   * @param itemIndex the index of constant pool item to get.
-   * @return the constant pool item for its index.
-   */
-  JJJVMConstantPoolItem getItemAt(int itemIndex);
+    /**
+     * Get Constant pool item.
+     *
+     * @param itemIndex the index of constant pool item to get.
+     * @return the constant pool item for its index.
+     */
+    JJJVMConstantPoolItem getItemAt(int itemIndex);
 }

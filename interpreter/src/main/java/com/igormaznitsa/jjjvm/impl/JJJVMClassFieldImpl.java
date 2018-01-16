@@ -15,6 +15,7 @@
  */
 package com.igormaznitsa.jjjvm.impl;
 
+import com.igormaznitsa.jjjvm.model.JJJVMConstants;
 import com.igormaznitsa.jjjvm.model.JJJVMField;
 import com.igormaznitsa.jjjvm.model.JJJVMClass;
 import com.igormaznitsa.jjjvm.model.JJJVMObject;
@@ -42,10 +43,10 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
    * @throws IllegalStateException if the field is either non static or is final
    */
   public void setStaticValue(final Object value) {
-    if ((this.flags & ACC_STATIC) == 0) {
+    if ((this.flags & JJJVMConstants.ACC_STATIC) == 0) {
       throw new IllegalStateException("Field '" + this.name + "' is not static");
     } else {
-      if ((this.flags & ACC_FINAL) == 0) {
+      if ((this.flags & JJJVMConstants.ACC_FINAL) == 0) {
         this.staticValue = value;
       } else {
         throw new IllegalStateException("Field '" + this.name + "' is final");
@@ -60,7 +61,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
    * @throws IllegalStateException if the field is non static
    */
   public Object getStaticValue() {
-    if ((this.flags & ACC_STATIC) == 0) {
+    if ((this.flags & JJJVMConstants.ACC_STATIC) == 0) {
       throw new IllegalStateException("Field '" + this.name + "' is not static");
     } else {
       return this.staticValue;
@@ -89,7 +90,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
     
     while (--attributesCounter >= 0) {
       final String attrName = (String) declaringClass.getConstantPool().getItemAt(inStream.readUnsignedShort()).asString();
-      if (ATRNAME_CONSTANTVALUE.equals(attrName)) {
+      if (JJJVMConstants.ATRNAME_CONSTANTVALUE.equals(attrName)) {
         final int attributeSize = inStream.readInt();
         if (attributeSize != 2) {
           throw new IOException("Wrong size for constant value attribute [" + attributeSize + ']');
@@ -102,7 +103,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
     }
 
     this.constantIndexInPool = theConstantValueIndex;
-    if ((this.flags & ACC_STATIC) != 0 && theConstantValueIndex >= 0) {
+    if ((this.flags & JJJVMConstants.ACC_STATIC) != 0 && theConstantValueIndex >= 0) {
       this.staticValue = this.getConstantValue();
     }
   }
@@ -112,7 +113,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
   }
 
   public Object get(final JJJVMObject instance) {
-    if ((flags & ACC_STATIC) == 0) {
+    if ((flags & JJJVMConstants.ACC_STATIC) == 0) {
       return instance.getFieldValue(this.name, true);
     } else {
       return this.staticValue;
@@ -120,7 +121,7 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
   }
 
   public void set(final JJJVMObject instance, final Object value) {
-    if ((flags & ACC_STATIC) == 0) {
+    if ((flags & JJJVMConstants.ACC_STATIC) == 0) {
       instance.setFieldValue(this.name, value, true);
     } else {
       this.staticValue = value;

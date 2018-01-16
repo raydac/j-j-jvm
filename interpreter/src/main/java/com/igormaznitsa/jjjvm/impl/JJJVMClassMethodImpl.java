@@ -15,10 +15,7 @@
  */
 package com.igormaznitsa.jjjvm.impl;
 
-import com.igormaznitsa.jjjvm.model.JJJVMClass;
-import com.igormaznitsa.jjjvm.model.JJJVMObject;
-import com.igormaznitsa.jjjvm.model.JJJVMMethod;
-import com.igormaznitsa.jjjvm.model.JJJVMTryCatchRecord;
+import com.igormaznitsa.jjjvm.model.*;
 import com.igormaznitsa.jjjvm.*;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -57,15 +54,15 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
       final String attrName = cpool.getItemAt(inStream.readUnsignedShort()).asString();
       // read the size of the attribute data
       final int attributeDataLen = inStream.readInt();
-      if (ATTRNAME_EXCEPTIONS.equals(attrName)) {
+      if (JJJVMConstants.ATTRNAME_EXCEPTIONS.equals(attrName)) {
         // read exceptions table for the method i.e. the tail contains exceptions which can be thrown by the method
         final int numberOfExceptions = inStream.readUnsignedShort();
-        declExceptions = numberOfExceptions == 0 ? EMPTY_STRING_ARRAY : new String[numberOfExceptions];
+        declExceptions = numberOfExceptions == 0 ? JJJVMConstants.EMPTY_STRING_ARRAY : new String[numberOfExceptions];
         for (int li = 0; li < numberOfExceptions; li++) {
           declExceptions[li] = cpool.getItemAt(inStream.readUnsignedShort()).asString();
         }
       } else {
-        if (ATTRNAME_CODE.equals(attrName)) {
+        if (JJJVMConstants.ATTRNAME_CODE.equals(attrName)) {
           // read the method bytecode and its attributes
           lmaxStackDepth = inStream.readUnsignedShort();
           lmaxLocalVars = inStream.readUnsignedShort();
@@ -73,7 +70,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
           inStream.readFully(lbytecode);
           // read the table of exception processors for the bytecode
           final int catchBlockNumber = inStream.readUnsignedShort();
-          lcatchBlocks = catchBlockNumber == 0 ? EMPTY_CATCBLOCK_ARRAY : new JJJVMTryCatchRecord[catchBlockNumber];
+          lcatchBlocks = catchBlockNumber == 0 ? JJJVMConstants.EMPTY_CATCBLOCK_ARRAY : new JJJVMTryCatchRecord[catchBlockNumber];
           for (int li = 0; li < lcatchBlocks.length; li++) {
             lcatchBlocks[li] = new JJJVMTryCatchRecord(cpool, inStream);
           }
@@ -105,7 +102,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
   }
 
   public Object invoke(final JJJVMObject instance, final Object[] arguments) throws Throwable {
-    if ((this.flags & ACC_STATIC) == 0 && instance == null) {
+    if ((this.flags & JJJVMConstants.ACC_STATIC) == 0 && instance == null) {
       throw new NullPointerException("'this' can't be null for non-static method");
     }
     return JJJVMInterpreter.invoke(this.declaringClass, instance, this, arguments, null, null);

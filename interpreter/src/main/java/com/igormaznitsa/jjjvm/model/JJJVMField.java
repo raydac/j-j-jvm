@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Igor Maznitsa (http://www.igormaznitsa.com).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,24 +15,24 @@
  */
 package com.igormaznitsa.jjjvm.model;
 
-public interface JJJVMField extends JJJVMConstants {
+public interface JJJVMField {
 
-  JJJVMClass getDeclaringClass();
+    JJJVMClass getDeclaringClass();
 
-  int getFlags();
+    int getFlags();
 
-  String getName();
+    String getName();
 
-  String getSignature();
+    String getSignature();
 
-  Object getConstantValue();
+    Object getConstantValue();
 
-  Object getStaticValue();
+    Object getStaticValue();
 
-  void setStaticValue(Object localMethodStack);
+    void setStaticValue(Object localMethodStack);
 
-  void set(JJJVMObject object, Object fieldValue);
+    void set(JJJVMObject object, Object fieldValue);
 
-  Object get(JJJVMObject object);
+    Object get(JJJVMObject object);
 
 }

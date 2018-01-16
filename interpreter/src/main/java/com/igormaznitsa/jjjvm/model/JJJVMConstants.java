@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Igor Maznitsa (http://www.igormaznitsa.com).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,43 +17,43 @@ package com.igormaznitsa.jjjvm.model;
 
 public interface JJJVMConstants {
 
-  public static final int ACC_PUBLIC = 0x0001;
-  public static final int ACC_PRIVATE = 0x0002;
-  public static final int ACC_PROTECTED = 0x0004;
-  public static final int ACC_STATIC = 0x0008;
-  public static final int ACC_FINAL = 0x0010;
-  public static final int ACC_SYNCHRONIZED = 0x0020;
-  public static final int ACC_METHOD_BRIDGE = 0x0040;
-  public static final int ACC_VOLATILE = 0x0040;
-  public static final int ACC_METHOD_VARARGS = 0x0080;
-  public static final int ACC_TRANSIENT = 0x0080;
-  public static final int ACC_NATIVE = 0x0100;
-  public static final int ACC_INTERFACE = 0x0200;
-  public static final int ACC_ABSTRACT = 0x0400;
-  public static final int ACC_STRICT = 0x0800;
-  public static final int ACC_SYNTHETIC = 0x1000;
-  public static final int ACC_ENUM = 0x4000;
+    int ACC_PUBLIC = 0x0001;
+    int ACC_PRIVATE = 0x0002;
+    int ACC_PROTECTED = 0x0004;
+    int ACC_STATIC = 0x0008;
+    int ACC_FINAL = 0x0010;
+    int ACC_SYNCHRONIZED = 0x0020;
+    int ACC_METHOD_BRIDGE = 0x0040;
+    int ACC_VOLATILE = 0x0040;
+    int ACC_METHOD_VARARGS = 0x0080;
+    int ACC_TRANSIENT = 0x0080;
+    int ACC_NATIVE = 0x0100;
+    int ACC_INTERFACE = 0x0200;
+    int ACC_ABSTRACT = 0x0400;
+    int ACC_STRICT = 0x0800;
+    int ACC_SYNTHETIC = 0x1000;
+    int ACC_ENUM = 0x4000;
 
-  public static final char TYPE_BYTE = 'B';
-  public static final char TYPE_CHAR = 'C';
-  public static final char TYPE_DOUBLE = 'D';
-  public static final char TYPE_FLOAT = 'F';
-  public static final char TYPE_INT = 'I';
-  public static final char TYPE_LONG = 'J';
-  public static final char TYPE_SHORT = 'S';
-  public static final char TYPE_BOOLEAN = 'Z';
-  public static final char TYPE_VOID = 'V';
-  public static final char TYPE_CLASS = 'L';
-  public static final char TYPE_ARRAY = '[';
+    char TYPE_BYTE = 'B';
+    char TYPE_CHAR = 'C';
+    char TYPE_DOUBLE = 'D';
+    char TYPE_FLOAT = 'F';
+    char TYPE_INT = 'I';
+    char TYPE_LONG = 'J';
+    char TYPE_SHORT = 'S';
+    char TYPE_BOOLEAN = 'Z';
+    char TYPE_VOID = 'V';
+    char TYPE_CLASS = 'L';
+    char TYPE_ARRAY = '[';
 
-  public static final String ATTRNAME_EXCEPTIONS = "Exceptions";
-  public static final String ATTRNAME_CODE = "Code";
-  public static final String ATRNAME_CONSTANTVALUE = "ConstantValue";
-  public static final String ATTRNAME_INNERCLASSES = "InnerClasses";
-  public static final String ATTRNAME_SOURCEFILE = "SourceFile";
+    String ATTRNAME_EXCEPTIONS = "Exceptions";
+    String ATTRNAME_CODE = "Code";
+    String ATRNAME_CONSTANTVALUE = "ConstantValue";
+    String ATTRNAME_INNERCLASSES = "InnerClasses";
+    String ATTRNAME_SOURCEFILE = "SourceFile";
 
-  public static final String[] EMPTY_STRING_ARRAY = new String[0];
-  public static final JJJVMInnerClassRecord[] EMPTY_INNERCLASS_ARRAY = new JJJVMInnerClassRecord[0];
-  public static final JJJVMTryCatchRecord[] EMPTY_CATCBLOCK_ARRAY = new JJJVMTryCatchRecord[0];
+    String[] EMPTY_STRING_ARRAY = new String[0];
+    JJJVMInnerClassRecord[] EMPTY_INNERCLASS_ARRAY = new JJJVMInnerClassRecord[0];
+    JJJVMTryCatchRecord[] EMPTY_CATCBLOCK_ARRAY = new JJJVMTryCatchRecord[0];
 
 }

@@ -1,54 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  
-  <groupId>com.igormaznitsa</groupId>
-  <artifactId>j-j-jvm</artifactId>
-  <version>1.1.0-SNAPSHOT</version>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <name>j-j-jvm</name>
-    
-  <packaging>pom</packaging>
+    <groupId>com.igormaznitsa</groupId>
+    <artifactId>j-j-jvm</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.5</maven.compiler.source>
-    <maven.compiler.target>1.5</maven.compiler.target>
-  </properties>
+    <name>j-j-jvm</name>
 
-  <inceptionYear>2009</inceptionYear>
+    <packaging>pom</packaging>
 
-  <prerequisites>
-    <maven>3.0</maven>
-  </prerequisites>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.5</maven.compiler.source>
+        <maven.compiler.target>1.5</maven.compiler.target>
+    </properties>
 
-  <description>Small Java based JVM interpreter</description>
-  <url>https://github.com/raydac/j-j-jvm</url>
+    <inceptionYear>2009</inceptionYear>
 
-  <issueManagement>
-    <system>GitHub Issues</system>
-    <url>https://github.com/raydac/j-j-jvm/issues</url>
-  </issueManagement>
-  <scm>
-    <connection>scm:git:git://github.com/raydac/j-j-jvm.git</connection>
-    <tag>HEAD</tag>
+    <prerequisites>
+        <maven>3.0</maven>
+    </prerequisites>
+
+    <description>Small Java based JVM interpreter</description>
     <url>https://github.com/raydac/j-j-jvm</url>
-  </scm>
 
-  <developers>
-    <developer>
-      <name>Igor Maznitsa</name>
-      <id>raydac</id>
-      <roles>
-        <role>author</role>
-      </roles>
-      <url>http://www.igormaznitsa.com</url>
-      <email>rrg4400@gmail.com</email>
-    </developer>
-  </developers>
-                                    
-  <modules>
-    <module>uistubgen</module>
-    <module>interpreter</module>
-  </modules>
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/raydac/j-j-jvm/issues</url>
+    </issueManagement>
+    <scm>
+        <connection>scm:git:git://github.com/raydac/j-j-jvm.git</connection>
+        <tag>HEAD</tag>
+        <url>https://github.com/raydac/j-j-jvm</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <name>Igor Maznitsa</name>
+            <id>raydac</id>
+            <roles>
+                <role>author</role>
+            </roles>
+            <url>http://www.igormaznitsa.com</url>
+            <email>rrg4400@gmail.com</email>
+        </developer>
+    </developers>
+
+    <modules>
+        <module>uistubgen</module>
+        <module>interpreter</module>
+    </modules>
 </project>
