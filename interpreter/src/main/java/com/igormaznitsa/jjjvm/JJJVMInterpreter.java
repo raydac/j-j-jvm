@@ -1053,8 +1053,10 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           {
             final int jumpOffset = readShortValueFromArray(methodBytecodes, regPC);
             regPC += 2;
-            Object res = localMethodStack[--regSP];
-            int value;
+            
+            final Object res = localMethodStack[--regSP];
+            final int value;
+            
             if (res instanceof Boolean) {
               value = ((Boolean) res) ? 1 : 0;
             } else {
