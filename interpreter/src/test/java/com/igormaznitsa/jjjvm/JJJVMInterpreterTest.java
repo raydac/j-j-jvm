@@ -1,21 +1,27 @@
 package com.igormaznitsa.jjjvm;
 
-import com.igormaznitsa.jjjvm.testclasses.TestObject;
-import com.igormaznitsa.jjjvm.utils.TestProviderImpl;
-import com.igormaznitsa.jjjvm.utils.TestHelper;
-import com.igormaznitsa.jjjvm.utils.Branch;
-import com.igormaznitsa.jjjvm.model.JJJVMMethod;
-import com.igormaznitsa.jjjvm.model.JJJVMProvider;
-import com.igormaznitsa.jjjvm.model.JJJVMClass;
-import com.igormaznitsa.jjjvm.model.JJJVMObject;
 import com.igormaznitsa.jjjvm.impl.JJJVMClassImpl;
 import com.igormaznitsa.jjjvm.impl.jse.JSEProviderImpl;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.ReentrantLock;
+import com.igormaznitsa.jjjvm.model.JJJVMClass;
+import com.igormaznitsa.jjjvm.model.JJJVMMethod;
+import com.igormaznitsa.jjjvm.model.JJJVMObject;
+import com.igormaznitsa.jjjvm.model.JJJVMProvider;
+import com.igormaznitsa.jjjvm.testclasses.TestObject;
+import com.igormaznitsa.jjjvm.utils.Branch;
+import com.igormaznitsa.jjjvm.utils.TestHelper;
+import com.igormaznitsa.jjjvm.utils.TestProviderImpl;
 import org.apache.bcel.generic.*;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import static org.junit.Assert.*;
 
 public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.ClassDataLoader {
@@ -1409,6 +1415,25 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     assertSame(theVector, result);
     assertArrayEquals(new Object[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}, result.toArray());
     assertArrayEquals(new Object[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, ((Vector) makeVector.invoke(obj, null)).toArray());
+  }
+
+  @Test
+  public void testIntegration_TestIterable() throws Throwable {
+    final JJJVMProvider provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestIterable");
+
+    final JJJVMObject obj = testKlazz.newInstance(true);
+
+    final JJJVMMethod iterableMethod = testKlazz.findMethod("iterate", "(Ljava/util/List;)I");
+
+    assertEquals(0,iterableMethod.invoke(obj, new Object[]{Collections.EMPTY_LIST}));
+    List list = new ArrayList();
+    list.add(1);
+    assertEquals(1,iterableMethod.invoke(obj, new Object[]{list}));
+    list.add(2);
+    assertEquals(2,iterableMethod.invoke(obj, new Object[]{list}));
+    list.clear();
+    assertEquals(0,iterableMethod.invoke(obj, new Object[]{list}));
   }
 
   @Test

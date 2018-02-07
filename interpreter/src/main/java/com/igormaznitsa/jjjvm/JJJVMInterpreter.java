@@ -15,15 +15,8 @@
  */
 package com.igormaznitsa.jjjvm;
 
-import com.igormaznitsa.jjjvm.model.JJJVMConstantPool;
-import com.igormaznitsa.jjjvm.model.JJJVMClass;
-import com.igormaznitsa.jjjvm.model.JJJVMProvider;
-import com.igormaznitsa.jjjvm.model.JJJVMObject;
-import com.igormaznitsa.jjjvm.model.JJJVMConstantPoolItem;
-import com.igormaznitsa.jjjvm.model.JJJVMMethod;
-import com.igormaznitsa.jjjvm.model.JJJVMTryCatchRecord;
-import com.igormaznitsa.jjjvm.model.JJJVMField;
 import com.igormaznitsa.jjjvm.model.*;
+
 import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
@@ -1060,7 +1053,13 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           {
             final int jumpOffset = readShortValueFromArray(methodBytecodes, regPC);
             regPC += 2;
-            final int value = ((Integer) localMethodStack[--regSP]);
+            Object res = localMethodStack[--regSP];
+            int value;
+            if (res instanceof Boolean) {
+              value = ((Boolean) res) ? 1 : 0;
+            } else {
+               value = ((Integer) res);
+            }
 
             final boolean doJump;
             switch (instruction) {
