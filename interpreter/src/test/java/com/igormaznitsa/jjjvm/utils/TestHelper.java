@@ -129,9 +129,6 @@ public abstract class TestHelper {
     clazzGen.getJavaClass().dump(buffer);
     buffer.close();
 
-    final byte[] bbb = buffer.toByteArray();
-    FileUtils.writeByteArrayToFile(new File("/home/igorm/1/SyntheticMJVMTest.class"), bbb);
-
     return new JJJVMClassImpl(new ByteArrayInputStream(buffer.toByteArray()), processor);
   }
 
