@@ -1636,7 +1636,24 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           localMethodStack[regSP++] = thr;
           regPC = record.getCodeAddress();
         } else {
-          throw thr;
+          int[][] lineNumberTable = method.getLineNumberTable();
+          if (lineNumberTable != null) {
+            int line=0;
+            for (int i=0;i<lineNumberTable.length;i++) {
+              line = lineNumberTable[i][1];
+              if (lastPC<lineNumberTable[i][0]) {
+                if (i>0) {
+                  line = lineNumberTable[i-1][1];
+                }
+                break;
+              }
+            }
+            StackTraceElement element = new StackTraceElement(caller.getClassName(),method.getName(),caller.getSourceFileName(), line);
+            thr.setStackTrace(new StackTraceElement[]{element});
+            throw thr;
+          } else {
+            throw thr;
+          }
         }
       }
     }

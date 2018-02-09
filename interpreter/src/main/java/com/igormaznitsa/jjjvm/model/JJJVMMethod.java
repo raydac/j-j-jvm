@@ -94,4 +94,9 @@ public interface JJJVMMethod extends JJJVMConstants {
    * @throws Throwable it will be thrown for errors
    */
   Object invoke(JJJVMObject object, Object[] arguments) throws Throwable;
+
+  /**
+   * @return line numbers table (if exists) to translate byte-code position to source-code line
+   */
+  public int[][] getLineNumberTable();
 }

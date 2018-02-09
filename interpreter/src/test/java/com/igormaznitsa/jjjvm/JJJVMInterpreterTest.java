@@ -1476,6 +1476,7 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     }
     catch (IOException ex) {
       assertEquals("IOE", ex.getMessage());
+      assertEquals(8, ex.getStackTrace()[0].getLineNumber());
     }
 
     try {
@@ -1484,6 +1485,7 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     }
     catch (ArithmeticException ex) {
       assertEquals("arith", ex.getMessage());
+      assertEquals(15, ex.getStackTrace()[0].getLineNumber());
     }
 
     try {
@@ -1492,6 +1494,7 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     }
     catch (UnsupportedOperationException ex) {
       assertEquals("uns", ex.getMessage());
+      assertEquals(17, ex.getStackTrace()[0].getLineNumber());
     }
 
     try {
@@ -1500,6 +1503,7 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     }
     catch (IllegalStateException ex) {
       assertEquals("ise", ex.getMessage());
+      assertEquals(23, ex.getStackTrace()[0].getLineNumber());
       assertEquals("npe", ex.getCause().getMessage());
     }
   }
