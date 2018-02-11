@@ -11,6 +11,7 @@ import com.igormaznitsa.jjjvm.utils.Branch;
 import com.igormaznitsa.jjjvm.utils.TestHelper;
 import com.igormaznitsa.jjjvm.utils.TestProviderImpl;
 import org.apache.bcel.generic.*;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ import static org.junit.Assert.*;
 
 public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.ClassDataLoader {
 
-  public byte[] loadClassBody(String jvmFormattedClassName) throws IOException {
+  public byte[] loadClassBody(String jvmFormattedClassName) {
     if (!jvmFormattedClassName.startsWith("com/igormaznitsa/jjjvm/testclasses")) {
       return null;
     }
@@ -34,11 +35,27 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
       return TestHelper.loadClassBodyFromClassPath(jvmFormattedClassName);
     }
     catch (ClassNotFoundException ex) {
-      return null;
+      // do nothing
     }
     catch (Throwable thr) {
-      throw new IOException("Error", thr);
+      fail("Can't load class "+jvmFormattedClassName+", error : "+thr.toString());
     }
+    return null;
+  }
+
+  @Test
+  @Ignore("ignored because JvaSE wrapper doesn't support instantiation of abstract classes and java.lang.Enum is abstract one")
+  public void testIntegration_TestEnumeration() throws Throwable {
+    final JJJVMProvider provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestEnumeration");
+
+    final JJJVMObject obj = testKlazz.newInstance(true);
+
+    final JJJVMMethod disabledMethod = testKlazz.findMethod("testDISABLED", "()Ljava/lang/String;");
+    final JJJVMMethod enabledMethod = testKlazz.findMethod("testENABLED", "()Ljava/lang/String;");
+
+    assertEquals("N",disabledMethod.invoke(obj, new Object[0]));
+    assertEquals("Y",enabledMethod.invoke(obj, new Object[0]));
   }
 
   @Test
