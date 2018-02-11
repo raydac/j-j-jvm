@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Igor Maznitsa (http://www.igormaznitsa.com).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,23 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.jjjvm.impl;
 
-import static com.igormaznitsa.jjjvm.impl.JJJVMImplUtils.assertNotNull;
+import com.igormaznitsa.jjjvm.JJJVMInterpreter;
 import com.igormaznitsa.jjjvm.model.JJJVMClass;
+import com.igormaznitsa.jjjvm.model.JJJVMField;
+import com.igormaznitsa.jjjvm.model.JJJVMInnerClassRecord;
+import com.igormaznitsa.jjjvm.model.JJJVMMethod;
 import com.igormaznitsa.jjjvm.model.JJJVMObject;
 import com.igormaznitsa.jjjvm.model.JJJVMProvider;
-import com.igormaznitsa.jjjvm.model.JJJVMMethod;
-import com.igormaznitsa.jjjvm.model.JJJVMInnerClassRecord;
-import com.igormaznitsa.jjjvm.model.JJJVMField;
-import com.igormaznitsa.jjjvm.*;
+
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.igormaznitsa.jjjvm.impl.JJJVMImplUtils.assertNotNull;
 
 /**
  * Contains class parser and JVM byte-code interpreter.
@@ -56,6 +63,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
   private final String sourceFile;
 
   private static final Map<String, String> loadingClasses = new ConcurrentHashMap<String, String>();
+  private static final Set<String> classesInClinit = Collections.synchronizedSet(new HashSet<String>());
 
   // constructor for test purposes
   public JJJVMClassImpl() {
@@ -75,10 +83,10 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
   /**
    * It parses and create instance of class which represented by input stream.
    *
-   * @param in stream contains array describing a compiled java class, must not
-   * be null
+   * @param in       stream contains array describing a compiled java class, must not
+   *                 be null
    * @param provider a provider which implements misc service methods to process
-   * byte code and resolve classes, must not be null
+   *                 byte code and resolve classes, must not be null
    * @throws Throwable it will be thrown for errors
    */
   public JJJVMClassImpl(final InputStream in, final JJJVMProvider provider) throws Throwable {
@@ -131,18 +139,19 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
       this.innerClasses = detectedInnerClassess == null ? EMPTY_INNERCLASS_ARRAY : detectedInnerClassess;
 
       final JJJVMMethod clinitMethod = findMethod("<clinit>", "()V");
-      if (clinitMethod != null && (clinitMethod.getFlags() & ACC_NATIVE) == 0) {
+      if (clinitMethod != null && (clinitMethod.getFlags() & ACC_NATIVE) == 0 && !this.classesInClinit.contains(this.getClassName())) {
         try {
+          this.classesInClinit.add(this.getClassName());
           clinitMethod.invoke(null, null);
-        }
-        catch (Throwable thr) {
+        } catch (Throwable thr) {
           throw new InvocationTargetException(thr, "Error during <clinit> [" + clinitMethod.getDeclaringClass().getName() + ']');
+        } finally {
+          this.classesInClinit.remove(this.getClassName());
         }
       }
 
       this.provider.registerExternalClass(this.getClassName(), this);
-    }
-    finally {
+    } finally {
       loadingClasses.remove(getClassName());
     }
   }
@@ -212,7 +221,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
    *
    * @return object represents superclass, must not be null
    * @throws Throwable it will be thrown if impossible to resolve class or some
-   * errors
+   *                   errors
    */
   public Object resolveSuperclass() throws Throwable {
     return this.provider.resolveClass(this.constantPool.getItemAt(this.superClassNameIndex).asString());
@@ -318,7 +327,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
    * Normalize a class name from jvm formatted form to normal form.
    *
    * @param jvmFormattedClassName jvm formatted name to be normalized, must not
-   * be null
+   *                              be null
    * @return normalized name, for instance "java/lang/Object" becomes
    * "java.lang.Object"
    */
@@ -369,7 +378,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
   /**
    * Find for method defined by the class or in its ancestors.
    *
-   * @param methodName the method name, must not be null
+   * @param methodName      the method name, must not be null
    * @param methodSignature the method signature, must not be null
    * @return found method object or null if not found
    * @throws Throwable it will be thrown for errors
@@ -388,7 +397,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
   /**
    * Find for method declared only in the class.
    *
-   * @param methodName the method name, must not be null
+   * @param methodName      the method name, must not be null
    * @param methodSignature the method signature, must not be null
    * @return found method object or null if not found
    */
@@ -406,7 +415,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
    * Create new instance of the class.
    *
    * @param invokeDefaultConstructor true if to call the default constructor for
-   * the new instance, false if just allocated object
+   *                                 the new instance, false if just allocated object
    * @return new object of the class, must not be null
    * @throws Throwable it will be thrown for errors
    */
@@ -429,10 +438,10 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
    * Create new class instance and call defined constructor.
    *
    * @param constructorSignature the signature of the constructor to be called
-   * after memory allocation, must not be null
-   * @param args array of arguments for the constructor, can be null
-   * @param stack predefined stack for the call, can be null
-   * @param vars predefined local variable array, can be null
+   *                             after memory allocation, must not be null
+   * @param args                 array of arguments for the constructor, can be null
+   * @param stack                predefined stack for the call, can be null
+   * @param vars                 predefined local variable array, can be null
    * @return new object instance of the class, must not be null
    * @throws Throwable it will be thrown for errors
    */
@@ -502,15 +511,15 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
    * @param fieldName the field name, must not be null
    * @return the value from the static field
    * @throws NoSuchFieldException if the field is not found
-   * @throws Throwable it will be thrown for inside errors
+   * @throws Throwable            it will be thrown for inside errors
    */
   public Object readStaticField(final String fieldName) throws Throwable {
     final JJJVMField field = this.findField(fieldName);
-    
+
     if (field == null) {
       throw new NoSuchFieldException(fieldName);
     }
-    
+
     return field.getStaticValue();
   }
 
@@ -518,18 +527,18 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
    * Write value into a class static field.
    *
    * @param fieldName the field name, must not be null
-   * @param value value to be written into the field
-   * @throws NoSuchFieldException if the field is not found
+   * @param value     value to be written into the field
+   * @throws NoSuchFieldException  if the field is not found
    * @throws IllegalStateException if the field is final
-   * @throws Throwable it will be thrown for inside errors
+   * @throws Throwable             it will be thrown for inside errors
    */
   public void writeStaticField(final String fieldName, final Object value) throws Throwable {
     final JJJVMField field = this.findField(fieldName);
-    
+
     if (field == null) {
       throw new NoSuchFieldException(fieldName);
     }
-    
+
     field.setStaticValue(value);
   }
 
