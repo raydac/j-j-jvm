@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Igor Maznitsa (http://www.igormaznitsa.com).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.jjjvm.impl.jse;
 
 import com.igormaznitsa.jjjvm.model.JJJVMClass;
@@ -21,6 +22,7 @@ import com.igormaznitsa.jjjvm.model.JJJVMProvider;
 import com.igormaznitsa.jjjvm.model.JJJVMInnerClassRecord;
 import com.igormaznitsa.jjjvm.impl.JJJVMClassImpl;
 import com.igormaznitsa.jjjvm.impl.JJJVMImplUtils;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.*;
@@ -42,7 +44,7 @@ public class JSEProviderImpl implements JJJVMProvider {
      * Load class byte-code.
      *
      * @param jvmFormattedClassName the JVM formatted class name, must not be
-     * null.
+     *                              null.
      * @return byte-code of the class, or null if class not found
      * @throws IOException it must be throws for transport error
      */
@@ -56,8 +58,7 @@ public class JSEProviderImpl implements JJJVMProvider {
       final Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
       field.setAccessible(true);
       return (sun.misc.Unsafe) field.get(null);
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       throw new Error("Can't get access to sun.misc.Unsafe", ex);
     }
   }
@@ -123,15 +124,15 @@ public class JSEProviderImpl implements JJJVMProvider {
     if (clazz == null) {
       throw new NullPointerException("Class is null");
     }
-    
+
     if (jvmFormattedClassName == null) {
       throw new NullPointerException("Class name is null");
     }
-    
+
     if (!(clazz instanceof Class || clazz instanceof JJJVMClass)) {
       throw new IllegalArgumentException("Unexpected class object [" + clazz + ']');
     }
-    
+
     synchronized (this.classCache) {
       this.classCache.put(jvmFormattedClassName, clazz);
     }
@@ -144,8 +145,7 @@ public class JSEProviderImpl implements JJJVMProvider {
       if (result == null) {
         try {
           result = loadClassFromLoader(jvmFormattedClassName);
-        }
-        catch (ClassNotFoundException ex) {
+        } catch (ClassNotFoundException ex) {
           result = Class.forName(jvmFormattedClassName.replace('/', '.'));
         }
         this.classCache.put(jvmFormattedClassName, result);
@@ -182,19 +182,17 @@ public class JSEProviderImpl implements JJJVMProvider {
     if ("<init>".equals(methodName)) {
       // constructor
       if (Modifier.isAbstract(klazz.getModifiers())) {
-        throw new Error("Attempt to instantiate abstract class "+klazz.getName());
+        throw new Error("Attempt directly instantiate abstract class " + klazz.getName());
       }
 
+      Constructor constructor;
       try {
-        final Constructor constructor = klazz.getConstructor(paramClasses);
-        constructor.setAccessible(true);
-        return constructor.newInstance(arguments);
-      }catch(NoSuchMethodException ex){
-        // try find protected one
-        final Constructor constructor = klazz.getDeclaredConstructor(paramClasses);
-        constructor.setAccessible(true);
-        return constructor.newInstance(arguments);
+        constructor = klazz.getConstructor(paramClasses);
+      } catch (NoSuchMethodException ex) {
+        constructor = klazz.getDeclaredConstructor(paramClasses);
       }
+      constructor.setAccessible(true);
+      return constructor.newInstance(arguments);
     } else {
       final Method method = findMethod(klazz, methodName, paramClasses);
       JJJVMImplUtils.makeAccessible(method);
@@ -285,8 +283,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     Field found = null;
     try {
       found = klazz.getDeclaredField(fieldName);
-    }
-    catch (NoSuchFieldException ex) {
+    } catch (NoSuchFieldException ex) {
       final Class superKlazz = klazz.getSuperclass();
       if (superKlazz != null) {
         found = findField(superKlazz, fieldName);
@@ -303,8 +300,7 @@ public class JSEProviderImpl implements JJJVMProvider {
     Method found = null;
     try {
       found = klazz.getDeclaredMethod(methodName, types);
-    }
-    catch (NoSuchMethodException ex) {
+    } catch (NoSuchMethodException ex) {
       final Class superKlazz = klazz.getSuperclass();
       if (superKlazz != null) {
         found = findMethod(superKlazz, methodName, types);
@@ -375,10 +371,10 @@ public class JSEProviderImpl implements JJJVMProvider {
    * Make search among ancestors and interfaces of a class for a class defined
    * by its normalized name
    *
-   * @param klazz a class which ancestors will be used for search, it can be
-   * null
+   * @param klazz           a class which ancestors will be used for search, it can be
+   *                        null
    * @param normalClassName normalized class name of target class, must not be
-   * null
+   *                        null
    * @return object of found class or null if not found or the root class is
    * null
    * @throws Throwable it will be thrown for error
@@ -407,10 +403,10 @@ public class JSEProviderImpl implements JJJVMProvider {
    * Make search among ancestors and interfaces of a JJJVMClass for a class
    * defined by its jvm formatted name.
    *
-   * @param klazz a class which ancestors will be used for search, it can be
-   * null
+   * @param klazz                 a class which ancestors will be used for search, it can be
+   *                              null
    * @param jvmFormattedClassName jvm formatted class name name of target class,
-   * must not be null
+   *                              must not be null
    * @return object of found class or null if not found or the root class is
    * null
    * @throws Throwable it will be thrown for error
@@ -482,8 +478,7 @@ public class JSEProviderImpl implements JJJVMProvider {
           final Object theclazz = this.resolveClass(jvmFormattedClassName);
           try {
             ((Class) theclazz).cast(value);
-          }
-          catch (ClassCastException ex) {
+          } catch (ClassCastException ex) {
             result = false;
           }
           record.put(klazzName, result);
