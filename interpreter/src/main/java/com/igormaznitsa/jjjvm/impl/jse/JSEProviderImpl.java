@@ -181,9 +181,20 @@ public class JSEProviderImpl implements JJJVMProvider {
     final Class klazz = (Class) resolvedClass;
     if ("<init>".equals(methodName)) {
       // constructor
-      final Constructor constructor = klazz.getConstructor(paramClasses);
-      constructor.setAccessible(true);
-      return constructor.newInstance(arguments);
+      if (Modifier.isAbstract(klazz.getModifiers())) {
+        throw new Error("Attempt to instantiate abstract class "+klazz.getName());
+      }
+
+      try {
+        final Constructor constructor = klazz.getConstructor(paramClasses);
+        constructor.setAccessible(true);
+        return constructor.newInstance(arguments);
+      }catch(NoSuchMethodException ex){
+        // try find protected one
+        final Constructor constructor = klazz.getDeclaredConstructor(paramClasses);
+        constructor.setAccessible(true);
+        return constructor.newInstance(arguments);
+      }
     } else {
       final Method method = findMethod(klazz, methodName, paramClasses);
       JJJVMImplUtils.makeAccessible(method);
