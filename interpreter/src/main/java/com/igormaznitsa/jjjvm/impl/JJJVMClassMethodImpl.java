@@ -34,6 +34,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
   private final int maxStackDepth;
   private final int maxLocals;
   private final byte[] bytecode;
+  private final int[][] lineNumberTable;
 
   JJJVMClassMethodImpl(final JJJVMClassImpl declaringClass, final DataInputStream inStream) throws IOException {
     final JJJVMConstantPoolImpl cpool = declaringClass.getConstantPool();
@@ -51,6 +52,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
     int lmaxStackDepth = -1;
     int lmaxLocalVars = -1;
     byte[] lbytecode = null;
+    int[][] lineNumbers = null;
     JJJVMTryCatchRecord[] lcatchBlocks = null;
 
     while (--numberOfAttrs >= 0) {
@@ -77,8 +79,19 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
           for (int li = 0; li < lcatchBlocks.length; li++) {
             lcatchBlocks[li] = new JJJVMTryCatchRecord(cpool, inStream);
           }
-          // skip all other attributes in the code attribute
-          JJJVMClassImpl.skipAllAttributesInStream(inStream);
+
+          int numberOfAttributes = inStream.readUnsignedShort();
+          while (--numberOfAttributes >= 0) {
+            final int attrNameIndex = inStream.readUnsignedShort();
+            final int attrDataSize = inStream.readInt();
+            final String codeAttrName = cpool.getItemAt(attrNameIndex).asString();
+            if (ATTRNAME_LINENUMBERTABLE.equals(codeAttrName)) {
+              lineNumbers = readLineNumberTable(inStream);
+            } else {
+              // skip all other attributes in the code attribute
+              JJJVMImplUtils.skip(inStream, attrDataSize);
+            }
+          }
         } else {
           // skip other attribute data
           JJJVMImplUtils.skip(inStream, attributeDataLen);
@@ -92,7 +105,7 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
     if (lcatchBlocks == null) {
       lcatchBlocks = new JJJVMTryCatchRecord[0];
     }
-
+    this.lineNumberTable = lineNumbers;
     this.declaredExceptions = declExceptions;
     this.catchBlocks = lcatchBlocks;
     this.maxStackDepth = lmaxStackDepth;
@@ -100,7 +113,29 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
     this.bytecode = lbytecode;
   }
 
-  public String[] getDeclaredExceptions() {
+
+  /**
+   * Read table with source line numbers
+   * @see https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.12
+   * @param inStream
+   * @return array of pairs code offset : line number
+   * @throws Throwable
+   */
+  private int[][] readLineNumberTable(final DataInputStream inStream) throws IOException {
+    final int numberOfRecordsInTable = inStream.readUnsignedShort();
+    int[][] result = new int[numberOfRecordsInTable][2];
+    for (int i = 0; i < numberOfRecordsInTable; i++) {
+      result[i][0] = inStream.readUnsignedShort();
+      result[i][1] = inStream.readUnsignedShort();
+    }
+    return result;
+  }
+
+  public int[][] getLineNumberTable() {
+      return lineNumberTable;
+  }
+
+    public String[] getDeclaredExceptions() {
     return this.declaredExceptions;
   }
 

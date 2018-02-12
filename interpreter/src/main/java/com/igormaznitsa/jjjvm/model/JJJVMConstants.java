@@ -51,6 +51,7 @@ public interface JJJVMConstants {
   public static final String ATRNAME_CONSTANTVALUE = "ConstantValue";
   public static final String ATTRNAME_INNERCLASSES = "InnerClasses";
   public static final String ATTRNAME_SOURCEFILE = "SourceFile";
+  public static final String ATTRNAME_LINENUMBERTABLE = "LineNumberTable";
 
   public static final String[] EMPTY_STRING_ARRAY = new String[0];
   public static final JJJVMInnerClassRecord[] EMPTY_INNERCLASS_ARRAY = new JJJVMInnerClassRecord[0];
