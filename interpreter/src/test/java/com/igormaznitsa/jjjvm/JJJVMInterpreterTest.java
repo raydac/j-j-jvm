@@ -1401,6 +1401,43 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
   }
 
   @Test
+  public void testIntegration_TestIssue_appendChars1() throws Throwable {
+    final JSEProviderImpl provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestIssue");
+    final JJJVMMethod append = testKlazz.findMethod("trampoline", "()Ljava/lang/String;");
+    String res = (String) append.invoke(null, new Object[]{});
+    String expected = new StringBuilder().append((char) 'a' ^ 'b').toString();
+    assertEquals(expected, res);
+  }
+
+  @Test
+  public void testIntegration_TestIssue_appendChars2() throws Throwable {
+    final JSEProviderImpl provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestIssue");
+    final JJJVMMethod append = testKlazz.findMethod("appendChars", "(CC)Ljava/lang/String;");
+    String res = (String) append.invoke(null, new Object[]{'a', 'b'});
+    String expected = new StringBuilder().append((char) 'a' ^ 'b').toString();
+    assertEquals(expected, res);
+  }
+
+  @Test
+  public void testIntegration_TestIssue_appendInts() throws Throwable {
+    final JSEProviderImpl provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestIssue");
+    final JJJVMMethod append = testKlazz.findMethod("appendInts", "(II)Ljava/lang/String;");
+    String res = (String) append.invoke(null, new Object[]{0x61, 0x62});
+    String expected = new StringBuilder().append((char) 'a' ^ 'b').toString();
+    assertEquals(expected, res);
+  }
+
+  @Test
+  public void testIntegration_TestIssue_defaultStaticValue() throws Throwable {
+    final JSEProviderImpl provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestIssue");
+    assertEquals(0, testKlazz.findField("i").getStaticValue());
+  }
+
+  @Test
   public void testIntegration_TestInvoke() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInvoke");
