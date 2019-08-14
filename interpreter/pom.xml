@@ -13,35 +13,6 @@
   <name>JJJVm</name>
   <description>Small JVM written in Java</description>
   
-  <profiles>
-    <profile>
-      <id>Coverage</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.7.2.201409121644</version>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>prepare-agent</goal>
-                </goals>
-              </execution>
-              <execution>
-                <id>report</id>
-                <phase>prepare-package</phase>
-                <goals>
-                  <goal>report</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-  
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -58,13 +29,13 @@
     <dependency>
       <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
-      <version>3.22.0-GA</version>
+      <version>3.25.0-GA</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.bcel</groupId>
       <artifactId>bcel</artifactId>
-      <version>6.2</version>
+      <version>6.3.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -82,7 +53,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.16</version>
+        <version>1.18</version>
         <executions>
           <execution>
             <id>ensure-java-1.5-class-library</id>
