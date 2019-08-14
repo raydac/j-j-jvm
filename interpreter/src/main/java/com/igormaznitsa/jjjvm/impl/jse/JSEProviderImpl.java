@@ -196,8 +196,21 @@ public class JSEProviderImpl implements JJJVMProvider {
     } else {
       final Method method = findMethod(klazz, methodName, paramClasses);
       JJJVMImplUtils.makeAccessible(method);
-      return method.invoke(instance, arguments);
+      return method.invoke(instance, castArgs(method.getParameterTypes(), arguments));
     }
+  }
+
+  private static Object[] castArgs(final Class[] types, final Object[] args) {
+    if (types.length>0){
+      for(int i=0;i<types.length;i++){
+        final Class type = types[i];
+        final Object arg = args[i];
+        if (type == char.class && arg instanceof Number) {
+          args[i] = (char)((Number)arg).intValue();
+        }
+      }
+    }
+    return args;
   }
 
   public Object[] newObjectArray(final JJJVMClass caller, final String jvmFormattedClassName, final int arrayLength) throws Throwable {

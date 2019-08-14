@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Igor Maznitsa (http://www.igormaznitsa.com).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.jjjvm.impl;
 
-import com.igormaznitsa.jjjvm.model.JJJVMField;
 import com.igormaznitsa.jjjvm.model.JJJVMClass;
+import com.igormaznitsa.jjjvm.model.JJJVMField;
 import com.igormaznitsa.jjjvm.model.JJJVMObject;
+
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Describes a class field.
@@ -34,6 +38,19 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
   private final int constantIndexInPool;
   private final int fieldUID;
   private volatile Object staticValue;
+
+  private static final Map<String, Object> DEFAULT_VALUES = new HashMap<String, Object>();
+
+  static {
+    DEFAULT_VALUES.put("B", (byte) 0);
+    DEFAULT_VALUES.put("C", '\u0000');
+    DEFAULT_VALUES.put("D", 0.0d);
+    DEFAULT_VALUES.put("F", 0.0f);
+    DEFAULT_VALUES.put("I", 0);
+    DEFAULT_VALUES.put("J", 0L);
+    DEFAULT_VALUES.put("S", (short) 0);
+    DEFAULT_VALUES.put("Z", false);
+  }
 
   /**
    * Write static value in the field.
@@ -71,22 +88,22 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
     this.declaringClass = declaringClass;
     int theConstantValueIndex = -1;
     this.staticValue = null;
-    
+
     // flags
     this.flags = inStream.readUnsignedShort();
-    
+
     // name
     final int nameIndex = inStream.readUnsignedShort();
     this.name = (String) declaringClass.getConstantPool().getItemAt(nameIndex).asString();
-    
+
     // type
     final int typeIndex = inStream.readUnsignedShort();
     this.signature = (String) declaringClass.getConstantPool().getItemAt(typeIndex).asString();
     this.fieldUID = (nameIndex << 16) | typeIndex;
-    
+
     // attributes
     int attributesCounter = inStream.readUnsignedShort();
-    
+
     while (--attributesCounter >= 0) {
       final String attrName = (String) declaringClass.getConstantPool().getItemAt(inStream.readUnsignedShort()).asString();
       if (ATRNAME_CONSTANTVALUE.equals(attrName)) {
@@ -102,8 +119,12 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
     }
 
     this.constantIndexInPool = theConstantValueIndex;
-    if ((this.flags & ACC_STATIC) != 0 && theConstantValueIndex >= 0) {
-      this.staticValue = this.getConstantValue();
+    if ((this.flags & ACC_STATIC) != 0) {
+      if (theConstantValueIndex >= 0) {
+        this.staticValue = this.getConstantValue();
+      } else {
+        this.staticValue = DEFAULT_VALUES.get(this.signature);
+      }
     }
   }
 

@@ -341,14 +341,14 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           break;
           case 46: // IALOAD
           {
-            final int index = ((Integer) localMethodStack[--regSP]);
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             final int[] array = (int[]) localMethodStack[--regSP];
             localMethodStack[regSP++] = array[index];
           }
           break;
           case 47: // LALOAD
           {
-            int index = ((Integer) localMethodStack[--regSP]);
+            int index = toNumber(localMethodStack[--regSP]).intValue();
             final long[] array = (long[]) localMethodStack[--regSP];
             localMethodStack[regSP++] = null;
             localMethodStack[regSP++] = array[index];
@@ -356,14 +356,14 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           break;
           case 48: // FALOAD
           {
-            final int index = ((Integer) localMethodStack[--regSP]);
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             final float[] array = (float[]) localMethodStack[--regSP];
             localMethodStack[regSP++] = array[index];
           }
           break;
           case 49: // DALOAD
           {
-            final int index = ((Integer) localMethodStack[--regSP]);
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             final double[] array = (double[]) localMethodStack[--regSP];
             localMethodStack[regSP++] = null;
             localMethodStack[regSP++] = array[index];
@@ -371,14 +371,14 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           break;
           case 50: // AALOAD
           {
-            final int index = ((Integer) localMethodStack[--regSP]);
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             final Object[] array = (Object[]) localMethodStack[--regSP];
             localMethodStack[regSP++] = array[index];
           }
           break;
           case 51: // BALOAD
           {
-            final int index = ((Integer) localMethodStack[--regSP]);
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             final Object arrayObj = localMethodStack[--regSP];
             if (arrayObj instanceof boolean[]) {
               final boolean[] boolArray = (boolean[]) arrayObj;
@@ -392,14 +392,14 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           break;
           case 52: // CALOAD 
           {
-            final int index = ((Integer) localMethodStack[--regSP]);
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             final char[] charArray = (char[]) localMethodStack[--regSP];
             localMethodStack[regSP++] = (int) charArray[index];
           }
           break;
           case 53: // SALOAD 
           {
-            final int index = ((Integer) localMethodStack[--regSP]);
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             final short[] shortArray = (short[]) localMethodStack[--regSP];
             localMethodStack[regSP++] = (int) shortArray[index];
           }
@@ -437,7 +437,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           case 61: // ISTORE_2
           case 62: // ISTORE_3
           {
-            final Integer intValue = (Integer) localMethodStack[--regSP];
+            final Integer intValue = toNumber(localMethodStack[--regSP]).intValue();
             localVars[instruction - 59] = intValue;
           }
           break;
@@ -446,7 +446,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           case 65: // LSTORE_2
           case 66: // LSTORE_3
           {
-            final Long longValue = (Long) localMethodStack[--regSP];
+            final Long longValue = toNumber(localMethodStack[--regSP]).longValue();
             localVars[instruction - 63] = longValue;
           }
           break;
@@ -455,7 +455,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           case 69: // FSTORE_2
           case 70: // FSTORE_3
           {
-            final Float floatValue = (Float) localMethodStack[--regSP];
+            final Float floatValue = toNumber(localMethodStack[--regSP]).floatValue();
             localVars[instruction - 67] = floatValue;
           }
           break;
@@ -464,7 +464,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           case 73: // DSTORE_2
           case 74: // DSTORE_3
           {
-            final Double dblValue = (Double) localMethodStack[--regSP];
+            final Double dblValue = toNumber(localMethodStack[--regSP]).doubleValue();
             localVars[instruction - 71] = dblValue;
           }
           break;
@@ -479,52 +479,52 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           break;
           case 79: // IASTORE
           {
-            final Integer value = (Integer) localMethodStack[--regSP];
-            final Integer index = (Integer) localMethodStack[--regSP];
+            final Integer value = toNumber(localMethodStack[--regSP]).intValue();
+            final Integer index = toNumber(localMethodStack[--regSP]).intValue();
             ((int[]) localMethodStack[--regSP])[index] = value;
           }
           break;
           case 80: // LASTORE
           {
-            final Long value = (Long) localMethodStack[--regSP];
+            final long value = toNumber(localMethodStack[--regSP]).longValue();
             --regSP;
-            final Integer index = (Integer) localMethodStack[--regSP];
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             ((long[]) localMethodStack[--regSP])[index] = value;
           }
           break;
           // FASTORE
           case 81: // FASTORE
           {
-            final Float value = (Float) localMethodStack[--regSP];
-            final Integer index = (Integer) localMethodStack[--regSP];
+            final float value = toNumber(localMethodStack[--regSP]).floatValue();
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             ((float[]) localMethodStack[--regSP])[index] = value;
           }
           break;
           case 82: // DASTORE
           {
-            final Double value = (Double) localMethodStack[--regSP];
+            final double value = toNumber(localMethodStack[--regSP]).doubleValue();
             --regSP;
-            final Integer index = (Integer) localMethodStack[--regSP];
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             ((double[]) localMethodStack[--regSP])[index] = value;
           }
           break;
           case 83: // AASTORE
           {
             final Object value = localMethodStack[--regSP];
-            final Integer index = (Integer) localMethodStack[--regSP];
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
             ((Object[]) localMethodStack[--regSP])[index] = value;
           }
           break;
           case 84: // BASTORE
           {
             final Object value = localMethodStack[--regSP];
-            final Integer index = (Integer) localMethodStack[--regSP];
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
 
             Object array = localMethodStack[--regSP];
             if (array instanceof boolean[]) {
               ((boolean[]) array)[index] = (Boolean) value;
             } else {
-              ((byte[]) array)[index] = ((Integer) value).byteValue();
+              ((byte[]) array)[index] = toNumber(value).byteValue();
             }
           }
           break;
@@ -532,7 +532,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           case 86: // SASTORE
           {
             final Object value = localMethodStack[--regSP];
-            final Integer index = (Integer) localMethodStack[--regSP];
+            final int index = toNumber(localMethodStack[--regSP]).intValue();
 
             if (instruction == 85) {
               final char[] arr = (char[]) localMethodStack[--regSP];
@@ -630,262 +630,262 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           break;
           case 96: // IADD
           {
-            final int first = ((Integer) localMethodStack[--regSP]);
-            int sec = ((Integer) localMethodStack[--regSP]);
+            final int first = toNumber(localMethodStack[--regSP]).intValue();
+            int sec = toNumber(localMethodStack[--regSP]).intValue();
             localMethodStack[regSP++] = first + sec;
           }
           break;
           case 97: // LADD
           {
-            final long first = ((Long) localMethodStack[--regSP]);
+            final long first = toNumber(localMethodStack[--regSP]).longValue();
             regSP--;
-            final long second = ((Long) localMethodStack[regSP - 1]);
+            final long second = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = first + second;
           }
           break;
           case 98: // FADD
           {
-            final float first = ((Float) localMethodStack[--regSP]);
-            final float second = ((Float) localMethodStack[regSP - 1]);
+            final float first = toNumber(localMethodStack[--regSP]).floatValue();
+            final float second = toNumber(localMethodStack[regSP - 1]).floatValue();
             localMethodStack[regSP - 1] = first + second;
           }
           break;
           case 99: // DADD
           {
-            final double first = ((Double) localMethodStack[--regSP]);
+            final double first = toNumber(localMethodStack[--regSP]).doubleValue();
             --regSP;
-            final double second = ((Double) localMethodStack[regSP - 1]);
+            final double second = toNumber(localMethodStack[regSP - 1]).doubleValue();
             localMethodStack[regSP - 1] = first + second;
           }
           break;
           case 100: // ISUB
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a - b;
           }
           break;
           case 101: // LSUB
           {
-            final long b = ((Long) localMethodStack[--regSP]);
+            final long b = toNumber(localMethodStack[--regSP]).longValue();
             --regSP;
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a - b;
           }
           break;
           case 102: // FSUB
           {
-            final float b = ((Float) localMethodStack[--regSP]);
-            final float a = ((Float) localMethodStack[regSP - 1]);
+            final float b = toNumber(localMethodStack[--regSP]).floatValue();
+            final float a = toNumber(localMethodStack[regSP - 1]).floatValue();
             localMethodStack[regSP - 1] = a - b;
           }
           break;
           case 103: // DSUB
           {
-            final double b = ((Double) localMethodStack[--regSP]);
+            final double b = toNumber(localMethodStack[--regSP]).doubleValue();
             --regSP;
-            final double a = ((Double) localMethodStack[regSP - 1]);
+            final double a = toNumber(localMethodStack[regSP - 1]).doubleValue();
             localMethodStack[regSP - 1] = a - b;
           }
           break;
           case 104: // IMUL
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a * b;
           }
           break;
           case 105: // LMUL
           {
-            final long b = ((Long) localMethodStack[--regSP]);
+            final long b = toNumber(localMethodStack[--regSP]).longValue();
             --regSP;
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a * b;
           }
           break;
           case 106: // FMUL 
           {
-            final float b = ((Float) localMethodStack[--regSP]);
-            final float a = ((Float) localMethodStack[regSP - 1]);
+            final float b = toNumber(localMethodStack[--regSP]).floatValue();
+            final float a = toNumber(localMethodStack[regSP - 1]).floatValue();
             localMethodStack[regSP - 1] = a * b;
           }
           break;
           case 107: // DMUL
           {
-            final double b = ((Double) localMethodStack[--regSP]);
+            final double b = toNumber(localMethodStack[--regSP]).doubleValue();
             --regSP;
-            final double a = ((Double) localMethodStack[regSP - 1]);
+            final double a = toNumber(localMethodStack[regSP - 1]).doubleValue();
             localMethodStack[regSP - 1] = a * b;
           }
           break;
           case 108: // IDIV
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a / b;
           }
           break;
           case 109: // LDIV
           {
-            final long b = ((Long) localMethodStack[--regSP]);
+            final long b = toNumber(localMethodStack[--regSP]).longValue();
             --regSP;
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a / b;
           }
           break;
           case 110: // FDIV
           {
-            final float b = ((Float) localMethodStack[--regSP]);
-            final float a = ((Float) localMethodStack[regSP - 1]);
+            final float b = toNumber(localMethodStack[--regSP]).floatValue();
+            final float a = toNumber(localMethodStack[regSP - 1]).floatValue();
             localMethodStack[regSP - 1] = a / b;
           }
           break;
           case 111: // DDIV
           {
-            final double b = ((Double) localMethodStack[--regSP]);
+            final double b = toNumber(localMethodStack[--regSP]).doubleValue();
             --regSP;
-            final double a = ((Double) localMethodStack[regSP - 1]);
+            final double a = toNumber(localMethodStack[regSP - 1]).doubleValue();
             localMethodStack[regSP - 1] = a / b;
           }
           break;
           case 112: // IREM
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a % b;
           }
           break;
           case 113: // LREM
           {
-            final long b = ((Long) localMethodStack[--regSP]);
+            final long b = toNumber(localMethodStack[--regSP]).longValue();
             --regSP;
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a % b;
           }
           break;
           case 114: // FREM
           {
-            final float b = ((Float) localMethodStack[--regSP]);
-            final float a = ((Float) localMethodStack[regSP - 1]);
+            final float b = toNumber(localMethodStack[--regSP]).floatValue();
+            final float a = toNumber(localMethodStack[regSP - 1]).floatValue();
             localMethodStack[regSP - 1] = a % b;
           }
           break;
           case 115: // DREM
           {
-            final double b = ((Double) localMethodStack[--regSP]);
+            final double b = toNumber(localMethodStack[--regSP]).doubleValue();
             --regSP;
-            final double a = ((Double) localMethodStack[regSP - 1]);
+            final double a = toNumber(localMethodStack[regSP - 1]).doubleValue();
             localMethodStack[regSP - 1] = a % b;
           }
           break;
           case 116: // INEG
           {
-            final int a = 0 - ((Integer) localMethodStack[regSP - 1]);
+            final int a = 0 - toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a;
           }
           break;
           case 117: // LNEG
           {
-            final long a = 0 - ((Long) localMethodStack[regSP - 1]);
+            final long a = 0 - toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a;
           }
           break;
           case 118: // FNEG
           {
-            final float a = 0 - ((Float) localMethodStack[regSP - 1]);
+            final float a = 0 - toNumber(localMethodStack[regSP - 1]).floatValue();
             localMethodStack[regSP - 1] = a;
           }
           break;
           case 119: // DNEG 
           {
-            final double a = 0 - ((Double) localMethodStack[regSP - 1]);
+            final double a = 0 - toNumber(localMethodStack[regSP - 1]).doubleValue();
             localMethodStack[regSP - 1] = a;
           }
           break;
           case 120: // ISHL 
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a << b;
           }
           break;
           case 121: // LSHL
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a << b;
           }
           break;
           case 122: // ISHR
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a >> b;
           }
           break;
           case 123: // LSHR
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a >> b;
           }
           break;
           case 124: // IUSHR
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a >>> b;
           }
           break;
           case 125: // LUSHR
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a >>> b;
           }
           break;
           case 126: // IAND 
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a & b;
           }
           break;
           case 127: // LAND
           {
-            final long b = ((Long) localMethodStack[--regSP]);
+            final long b = toNumber(localMethodStack[--regSP]).longValue();
             --regSP;
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a & b;
           }
           break;
           case 128: // IOR 
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a | b;
           }
           break;
           case 129: // LOR 
           {
-            final long b = ((Long) localMethodStack[--regSP]);
+            final long b = toNumber(localMethodStack[--regSP]).longValue();
             --regSP;
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a | b;
           }
           break;
           case 130: // IXOR
           {
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[regSP - 1]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[regSP - 1]).intValue();
             localMethodStack[regSP - 1] = a ^ b;
           }
           break;
           case 131: // LXOR 
           {
-            final long b = ((Long) localMethodStack[--regSP]);
+            final long b = toNumber(localMethodStack[--regSP]).longValue();
             --regSP;
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[regSP - 1] = a ^ b;
           }
           break;
@@ -904,12 +904,12 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
               nextInstructionWide = false;
             }
 
-            localVars[index] = ((Integer) localVars[index]) + cons;
+            localVars[index] = toNumber(localVars[index]).intValue() + cons;
           }
           break;
           case 133: // I2L
           {
-            final Integer value = (Integer) localMethodStack[regSP - 1];
+            final Number value = toNumber(localMethodStack[regSP - 1]);
             localMethodStack[regSP - 1] = null;
             localMethodStack[regSP++] = value.longValue();
           }
@@ -917,69 +917,69 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           case 134: // I2F
           {
             final int top = regSP - 1;
-            localMethodStack[top] = ((Integer) localMethodStack[top]).floatValue();
+            localMethodStack[top] = toNumber(localMethodStack[top]).floatValue();
           }
           break;
           case 135: // I2D
           {
-            final Integer value = (Integer) localMethodStack[regSP - 1];
+            final Number value = toNumber(localMethodStack[regSP - 1]);
             localMethodStack[regSP - 1] = null;
             localMethodStack[regSP++] = value.doubleValue();
           }
           break;
           case 136: // L2I
           {
-            final Long value = (Long) localMethodStack[regSP - 1];
+            final Number value = toNumber(localMethodStack[regSP - 1]);
             localMethodStack[--regSP] = null;
             localMethodStack[regSP - 1] = value.intValue();
           }
           break;
           case 137: // L2F
           {
-            final Long value = (Long) localMethodStack[regSP - 1];
+            final Number value = toNumber(localMethodStack[regSP - 1]);
             localMethodStack[--regSP] = null;
             localMethodStack[regSP - 1] = value.floatValue();
           }
           break;
           case 138: // L2D
           {
-            localMethodStack[regSP - 1] = ((Long) localMethodStack[regSP - 1]).doubleValue();
+            localMethodStack[regSP - 1] = toNumber(localMethodStack[regSP - 1]).doubleValue();
           }
           break;
           case 139: // F2I
           {
-            localMethodStack[regSP - 1] = ((Float) localMethodStack[regSP - 1]).intValue();
+            localMethodStack[regSP - 1] = toNumber(localMethodStack[regSP - 1]).intValue();
           }
           break;
           case 140: // F2L
           {
-            final Float value = (Float) localMethodStack[regSP - 1];
+            final Number value = toNumber(localMethodStack[regSP - 1]);
             localMethodStack[regSP - 1] = null;
             localMethodStack[regSP++] = value.longValue();
           }
           break;
           case 141: // F2D
           {
-            final Float value = (Float) localMethodStack[regSP - 1];
+            final Number value = toNumber(localMethodStack[regSP - 1]);
             localMethodStack[regSP - 1] = null;
             localMethodStack[regSP++] = value.doubleValue();
           }
           break;
           case 142: // D2I
           {
-            final Double value = (Double) localMethodStack[regSP - 1];
+            final Number value = toNumber(localMethodStack[regSP - 1]);
             localMethodStack[--regSP] = null;
             localMethodStack[regSP - 1] = value.intValue();
           }
           break;
           case 143: // D2L
           {
-            localMethodStack[regSP - 1] = ((Double) localMethodStack[regSP - 1]).longValue();
+            localMethodStack[regSP - 1] = toNumber(localMethodStack[regSP - 1]).longValue();
           }
           break;
           case 144: // D2F 
           {
-            final Double value = (Double) localMethodStack[regSP - 1];
+            final Number value = toNumber(localMethodStack[regSP - 1]);
             localMethodStack[--regSP] = null;
             localMethodStack[regSP - 1] = value.floatValue();
           }
@@ -987,27 +987,27 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           case 145: // I2B 
           {
             final int sp = regSP - 1;
-            localMethodStack[sp] = (int) ((Integer) localMethodStack[sp]).byteValue();
+            localMethodStack[sp] = (int) toNumber(localMethodStack[sp]).byteValue();
           }
           break;
           case 146: // I2C 
           {
             final int sp = regSP - 1;
-            localMethodStack[sp] = ((Integer) localMethodStack[sp]) & 0xFFFF;
+            localMethodStack[sp] = (char)(toNumber(localMethodStack[sp]).intValue());
           }
           break;
           case 147: // I2S
           {
             final int sp = regSP - 1;
-            localMethodStack[sp] = (int) ((Integer) localMethodStack[sp]).shortValue();
+            localMethodStack[sp] = toNumber(localMethodStack[sp]).shortValue();
           }
           break;
           case 148: // LCMP
           {
-            final long b = ((Long) localMethodStack[regSP - 1]);
+            final long b = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[--regSP] = null;
             --regSP;
-            final long a = ((Long) localMethodStack[regSP - 1]);
+            final long a = toNumber(localMethodStack[regSP - 1]).longValue();
             localMethodStack[--regSP] = null;
             localMethodStack[regSP - 1] = a == b ? 0 : a > b ? 1 : -1;
           }
@@ -1015,10 +1015,10 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           case 149: // FCMPL
           case 150: // FCMPG
           {
-            final float b = ((Float) localMethodStack[regSP - 1]);
+            final float b = toNumber(localMethodStack[regSP - 1]).floatValue();
             localMethodStack[--regSP] = null;
             final int index = regSP - 1;
-            final float a = ((Float) localMethodStack[index]);
+            final float a = toNumber(localMethodStack[index]).floatValue();
             if (Float.isNaN(a) || Float.isNaN(b)) {
               localMethodStack[index] = instruction == 150 ? 1 : -1;
             } else {
@@ -1029,10 +1029,10 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           case 151: // DCMPL
           case 152: // DCMPG
           {
-            final double b = ((Double) localMethodStack[regSP - 1]);
+            final double b = toNumber(localMethodStack[regSP - 1]).doubleValue();
             localMethodStack[--regSP] = null;
             regSP--;
-            final double a = ((Double) localMethodStack[regSP - 1]);
+            final double a = toNumber(localMethodStack[regSP - 1]).doubleValue();
             localMethodStack[--regSP] = null;
 
             final int index = regSP - 1;
@@ -1060,7 +1060,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             if (res instanceof Boolean) {
               value = ((Boolean) res) ? 1 : 0;
             } else {
-               value = ((Integer) res);
+               value = toNumber(res).intValue();
             }
 
             final boolean doJump;
@@ -1107,8 +1107,8 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             final int jumpOffset = readShortValueFromArray(methodBytecodes, regPC);
             regPC += 2;
 
-            final int b = ((Integer) localMethodStack[--regSP]);
-            final int a = ((Integer) localMethodStack[--regSP]);
+            final int b = toNumber(localMethodStack[--regSP]).intValue();
+            final int a = toNumber(localMethodStack[--regSP]).intValue();
 
             final boolean doJump;
 
@@ -1202,7 +1202,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
               localVarIndex = (localVarIndex << 8) | (methodBytecodes[regPC++] & 0xFF);
               nextInstructionWide = false;
             }
-            regPC = ((Integer) localVars[localVarIndex]);
+            regPC = toNumber(localVars[localVarIndex]).intValue();
           }
           break;
           case 170: // TABLESWITCH
@@ -1216,7 +1216,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             final int highValue = readIntFromArray(methodBytecodes, regPC);
             regPC += 4;
 
-            final int value = ((Integer) localMethodStack[--regSP]);
+            final int value = toNumber(localMethodStack[--regSP]).intValue();
             int offset = defaultAddr;
 
             if (value >= lowValue && value <= highValue) {
@@ -1236,7 +1236,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             final int pairsNumber = readIntFromArray(methodBytecodes, regPC);
             regPC += 4;
 
-            final int value = ((Integer) localMethodStack[--regSP]);
+            final int value = toNumber(localMethodStack[--regSP]).intValue();
             int offset = defaultAddr;
 
             for (int li = 0; li < pairsNumber; li++) {
@@ -1428,7 +1428,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
           break;
           case 188: // NEWARRAY
           {
-            final int count = ((Integer) localMethodStack[--regSP]);
+            final int count = toNumber(localMethodStack[--regSP]).intValue();
             final int atype = methodBytecodes[regPC++] & 0xFF;
 
             final Object result;
@@ -1487,7 +1487,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             final int index = readShortValueFromArray(methodBytecodes, regPC) & 0xFFFF;
             regPC += 2;
 
-            final int count = ((Integer) localMethodStack[--regSP]);
+            final int count = toNumber(localMethodStack[--regSP]).intValue();
             final String className = cpool.getItemAt(index).getClassName();
             final Object[] objArray = provider.newObjectArray(caller, className, count);
 
@@ -1581,7 +1581,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
             final int[] dimensions = new int[dimensionsSize];
 
             while (--dimensionsSize >= 0) {
-              dimensions[dimensionsSize] = ((Integer) localMethodStack[regSP - 1]);
+              dimensions[dimensionsSize] = toNumber(localMethodStack[regSP - 1]).intValue();
               localMethodStack[--regSP] = null;
             }
 
@@ -1702,6 +1702,11 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
         return counter;
       }
     }
+  }
+
+  private static Number toNumber(final Object obj) {
+    if (obj.getClass() == Character.class) return (int) (Character) obj;
+    return (Number) obj;
   }
 
   private static int readIntFromArray(final byte[] array, int offset) {

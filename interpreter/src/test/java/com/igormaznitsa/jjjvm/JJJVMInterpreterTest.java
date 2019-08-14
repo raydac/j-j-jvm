@@ -709,9 +709,9 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     final Object[] stack = new Object[100];
     final JJJVMClassImpl test = prepareTestClass(new TestProviderImpl(), Type.INT, new ILOAD(1), new I2C(), new RETURN());
     executeTestMethod(test, Integer.class, stack, -123334);
-    assertStack(new Object[]{(int) ((char) -123334), null}, stack);
+    assertStack(new Object[]{(char) -123334, null}, stack);
     executeTestMethod(test, Integer.class, stack, 123334);
-    assertStack(new Object[]{(int) ((char) 123334), null}, stack);
+    assertStack(new Object[]{(char) 123334, null}, stack);
   }
 
   @Test
@@ -727,9 +727,9 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     final Object[] stack = new Object[100];
     final JJJVMClassImpl test = prepareTestClass(new TestProviderImpl(), Type.INT, new ILOAD(1), new I2S(), new RETURN());
     executeTestMethod(test, Integer.class, stack, -123334);
-    assertStack(new Object[]{(int) ((short) -123334), null}, stack);
+    assertStack(new Object[]{(short) -123334, null}, stack);
     executeTestMethod(test, Integer.class, stack, 123334);
-    assertStack(new Object[]{(int) ((short) 123334), null}, stack);
+    assertStack(new Object[]{(short) 123334, null}, stack);
   }
 
   @Test
@@ -1406,7 +1406,7 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestIssue");
     final JJJVMMethod append = testKlazz.findMethod("trampoline", "()Ljava/lang/String;");
     String res = (String) append.invoke(null, new Object[]{});
-    String expected = new StringBuilder().append((char) 'a' ^ 'b').toString();
+    String expected = new StringBuilder().append((char) ('a' ^ 'b')).toString();
     assertEquals(expected, res);
   }
 
@@ -1416,7 +1416,7 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestIssue");
     final JJJVMMethod append = testKlazz.findMethod("appendChars", "(CC)Ljava/lang/String;");
     String res = (String) append.invoke(null, new Object[]{'a', 'b'});
-    String expected = new StringBuilder().append((char) 'a' ^ 'b').toString();
+    String expected = new StringBuilder().append((char) ('a' ^ 'b')).toString();
     assertEquals(expected, res);
   }
 
@@ -1426,7 +1426,7 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestIssue");
     final JJJVMMethod append = testKlazz.findMethod("appendInts", "(II)Ljava/lang/String;");
     String res = (String) append.invoke(null, new Object[]{0x61, 0x62});
-    String expected = new StringBuilder().append((char) 'a' ^ 'b').toString();
+    String expected = new StringBuilder().append((char) ('a' ^ 'b')).toString();
     assertEquals(expected, res);
   }
 
