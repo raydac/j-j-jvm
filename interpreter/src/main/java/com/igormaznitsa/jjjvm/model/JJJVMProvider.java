@@ -133,9 +133,10 @@ public interface JJJVMProvider extends JJJVMConstants {
    * @param fieldName the field name, must not be null
    * @param fieldSignature the field signature, must not be null
    * @param value the value to be written into the static field
+   * @param force force set value to final field
    * @throws Throwable it will be thrown for errors
    */
-  void setStatic(JJJVMClass caller, String jvmFormattedClassName, String fieldName, String fieldSignature, Object value) throws Throwable;
+  void setStatic(JJJVMClass caller, String jvmFormattedClassName, String fieldName, String fieldSignature, Object value, boolean force) throws Throwable;
 
   /**
    * Check that object can be casted to class.

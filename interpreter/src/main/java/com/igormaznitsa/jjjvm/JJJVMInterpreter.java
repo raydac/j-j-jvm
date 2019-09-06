@@ -1293,7 +1293,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
                 }
                 localMethodStack[regSP++] = value;
               } else {
-                thefield.setStaticValue(localMethodStack[--regSP]);
+                thefield.setStaticValue(localMethodStack[--regSP], method.isClinit());
               }
             } else {
               if (instruction == 178) {
@@ -1304,7 +1304,7 @@ public abstract class JJJVMInterpreter implements JJJVMConstants {
                 localMethodStack[regSP++] = value;
               } else {
                 value = localMethodStack[--regSP];
-                provider.setStatic(caller, className, fieldName, fieldSignature, value);
+                provider.setStatic(caller, className, fieldName, fieldSignature, value, method.isClinit());
               }
             }
           }

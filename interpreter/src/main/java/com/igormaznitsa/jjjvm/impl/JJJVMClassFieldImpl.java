@@ -56,13 +56,14 @@ public final class JJJVMClassFieldImpl implements JJJVMField {
    * Write static value in the field.
    *
    * @param value object to be saved
+   * @param force if true then set value even for final field
    * @throws IllegalStateException if the field is either non static or is final
    */
-  public void setStaticValue(final Object value) {
+  public void setStaticValue(final Object value, final boolean force) {
     if ((this.flags & ACC_STATIC) == 0) {
       throw new IllegalStateException("Field '" + this.name + "' is not static");
     } else {
-      if ((this.flags & ACC_FINAL) == 0) {
+      if ((this.flags & ACC_FINAL) == 0 || force) {
         this.staticValue = value;
       } else {
         throw new IllegalStateException("Field '" + this.name + "' is final");

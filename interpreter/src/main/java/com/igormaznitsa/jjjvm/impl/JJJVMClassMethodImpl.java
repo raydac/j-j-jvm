@@ -35,7 +35,8 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
   private final int maxLocals;
   private final byte[] bytecode;
   private final int[][] lineNumberTable;
-
+  private final boolean clinit;
+  
   JJJVMClassMethodImpl(final JJJVMClassImpl declaringClass, final DataInputStream inStream) throws IOException {
     final JJJVMConstantPoolImpl cpool = declaringClass.getConstantPool();
 
@@ -46,6 +47,8 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
     this.name = cpool.getItemAt(nameIndex).asString();
     this.signature = cpool.getItemAt(descriptorIndex).asString();
 
+    this.clinit = (this.flags & ACC_STATIC)==ACC_STATIC && this.name.equals("<clinit>") && this.signature.equals("()V");
+    
     int numberOfAttrs = inStream.readUnsignedShort();
 
     String[] declExceptions = null;
@@ -113,6 +116,10 @@ public final class JJJVMClassMethodImpl implements JJJVMMethod {
     this.bytecode = lbytecode;
   }
 
+  @Override
+  public boolean isClinit() {
+    return this.clinit;
+  }
 
   /**
    * Read table with source line numbers

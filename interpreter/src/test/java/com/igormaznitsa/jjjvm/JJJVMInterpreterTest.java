@@ -1130,7 +1130,15 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     final JJJVMProvider processor = new TestProviderImpl() {
 
       @Override
-      public void setStatic(final JJJVMClass source, final String className, final String fieldName, final String fieldSignature, final Object value) {
+      public void setStatic(
+              final JJJVMClass source, 
+              final String className, 
+              final String fieldName, 
+              final String fieldSignature, 
+              final Object value,
+              final boolean force
+              ) {
+        assertFalse(force);
         assertEquals("com/igormaznitsa/jjjvm/testclasses/TestObject", className);
         assertEquals("sfield", fieldName);
         assertEquals("I", fieldSignature);

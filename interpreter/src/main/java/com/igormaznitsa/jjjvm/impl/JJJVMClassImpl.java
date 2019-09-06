@@ -539,7 +539,7 @@ public final class JJJVMClassImpl extends JJJVMInterpreter implements JJJVMClass
       throw new NoSuchFieldException(fieldName);
     }
 
-    field.setStaticValue(value);
+    field.setStaticValue(value, false);
   }
 
   public Map<String, JJJVMField> getAllDeclaredFields() {

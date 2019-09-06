@@ -163,7 +163,14 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  public Object invoke(final JJJVMClass caller, final Object instance, final String jvmFormattedClassName, final String methodName, final String methodSignature, final Object[] arguments) throws Throwable {
+  public Object invoke(
+          final JJJVMClass caller, 
+          final Object instance, 
+          final String jvmFormattedClassName, 
+          final String methodName, 
+          final String methodSignature, 
+          final Object[] arguments
+  ) throws Throwable {
     if ("java/lang/Object".equals(jvmFormattedClassName) && methodName.startsWith("<")) {
       return null;
     }
@@ -192,20 +199,22 @@ public class JSEProviderImpl implements JJJVMProvider {
         constructor = klazz.getDeclaredConstructor(paramClasses);
       }
       constructor.setAccessible(true);
-      return constructor.newInstance(arguments);
+      return constructor.newInstance(castArgs(constructor.getParameterTypes(), arguments));
     } else {
       final Method method = findMethod(klazz, methodName, paramClasses);
       JJJVMImplUtils.makeAccessible(method);
       return method.invoke(instance, castArgs(method.getParameterTypes(), arguments));
     }
   }
-
+  
   private static Object[] castArgs(final Class[] types, final Object[] args) {
     if (types.length>0){
       for(int i=0;i<types.length;i++){
         final Class type = types[i];
         final Object arg = args[i];
-        if (type == char.class && arg instanceof Number) {
+        if (type == boolean.class && arg instanceof Number) {
+          args[i] = ((Number)arg).intValue() != 0;
+        } else if (type == char.class && arg instanceof Number) {
           args[i] = (char)((Number)arg).intValue();
         }
       }
@@ -335,7 +344,13 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  public void set(final JJJVMClass caller, final Object obj, final String fieldName, final String fieldSignature, final Object fieldValue) throws Throwable {
+  public void set(
+          final JJJVMClass caller, 
+          final Object obj, 
+          final String fieldName, 
+          final String fieldSignature, 
+          final Object fieldValue
+  ) throws Throwable {
     if (obj instanceof JJJVMObject) {
       final JJJVMObject jjjobj = (JJJVMObject) obj;
       jjjobj.getDeclaringClass().findDeclaredField(fieldName).set(jjjobj, fieldValue);
@@ -344,7 +359,12 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  public Object getStatic(final JJJVMClass caller, final String jvmFormattedClassName, final String fieldName, final String fieldSignature) throws Throwable {
+  public Object getStatic(
+          final JJJVMClass caller, 
+          final String jvmFormattedClassName, 
+          final String fieldName, 
+          final String fieldSignature
+  ) throws Throwable {
     final Object resolved = resolveClass(jvmFormattedClassName);
     if (resolved instanceof JJJVMClass) {
       return ((JJJVMClass) resolved).findDeclaredField(fieldName).getStaticValue();
@@ -353,10 +373,17 @@ public class JSEProviderImpl implements JJJVMProvider {
     }
   }
 
-  public void setStatic(final JJJVMClass caller, final String jvmFormattedClassName, final String fieldName, final String fieldSignature, final Object value) throws Throwable {
+  public void setStatic(
+          final JJJVMClass caller, 
+          final String jvmFormattedClassName, 
+          final String fieldName, 
+          final String fieldSignature, 
+          final Object value,
+          final boolean force
+  ) throws Throwable {
     final Object resolved = resolveClass(jvmFormattedClassName);
     if (resolved instanceof JJJVMClass) {
-      ((JJJVMClass) resolved).findDeclaredField(fieldName).setStaticValue(value);
+      ((JJJVMClass) resolved).findDeclaredField(fieldName).setStaticValue(value, force);
     } else {
       findField((Class) resolved, fieldName).set(null, value);
     }

@@ -41,7 +41,7 @@ public class TestProviderImpl implements JJJVMProvider {
     return null;
   }
 
-  public void setStatic(JJJVMClass source, String jvmFormattedClassName, String fieldName, String fieldSignature, Object value) throws Throwable{
+  public void setStatic(JJJVMClass source, String jvmFormattedClassName, String fieldName, String fieldSignature, Object value, boolean force) throws Throwable{
     fail("setStatic");
   }
 

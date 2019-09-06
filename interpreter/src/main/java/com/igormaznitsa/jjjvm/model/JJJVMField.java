@@ -29,7 +29,7 @@ public interface JJJVMField extends JJJVMConstants {
 
   Object getStaticValue();
 
-  void setStaticValue(Object localMethodStack);
+  void setStaticValue(Object localMethodStack, boolean force);
 
   void set(JJJVMObject object, Object fieldValue);
 
