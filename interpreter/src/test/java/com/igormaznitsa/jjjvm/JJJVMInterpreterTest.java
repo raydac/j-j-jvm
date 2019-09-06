@@ -1438,6 +1438,17 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
   }
 
   @Test
+  public void testIntegration_TestIssue_BooleanObjectAllocation() throws Throwable {
+    final JSEProviderImpl provider = new JSEProviderImpl(this);
+    final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestIssue");
+    final JJJVMMethod append = testKlazz.findMethod("allocateBooleans", "()[Ljava/lang/Object;");
+    Object[] res = (Object[]) append.invoke(null, null);
+    assertEquals(Boolean.TRUE, res[0]);
+    assertEquals(Boolean.FALSE, res[1]);
+    assertEquals(Boolean.TRUE, res[2]);
+  }
+
+  @Test
   public void testIntegration_TestInvoke() throws Throwable {
     final JJJVMProvider provider = new JSEProviderImpl(this);
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInvoke");
