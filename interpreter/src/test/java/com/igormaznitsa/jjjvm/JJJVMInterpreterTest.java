@@ -1622,6 +1622,21 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
   }
 
   @Test
+  public void testIntegration_CloneArray() throws Throwable {
+    final JJJVMClassImpl test = prepareTestClass(new JSEProviderImpl(this),
+       "public int [] test(int [] a){"
+            + "  return (int []) a.clone();"
+            + "}"
+    );
+
+    final int [] orig = new int []{0,1,2,3};
+    final int[] result = (int[]) executeTestMethod(test, int[].class, null, orig);
+    assertNotSame(orig,result);
+    assertEquals(4, result.length);
+    assertArrayEquals(new int[]{0, 1, 2, 3}, result);
+  }
+
+  @Test
   public void testSynchronization_staticMethods() throws Throwable {
 
     final AtomicLong callCounter = new AtomicLong();

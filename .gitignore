@@ -37,3 +37,6 @@ hs_err_pid*
 /interpreter/j-j-jvm-interpreter.iml
 /uistubgen/dependency-reduced-pom.xml
 /uistubgen/j-j-jvm-stubgen.iml
+/.idea/
+/interpreter/nb-configuration.xml
+/interpreter/target/maven-archiver/

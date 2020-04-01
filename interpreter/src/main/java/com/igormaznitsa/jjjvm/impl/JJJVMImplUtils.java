@@ -12,7 +12,7 @@ public abstract class JJJVMImplUtils {
   }
 
   public static void makeAccessible(final AccessibleObject obj) {
-    if (obj != null && obj.isAccessible()) {
+    if (obj != null && !obj.isAccessible()) {
       AccessController.doPrivileged(new PrivilegedAction() {
         public Object run() {
           obj.setAccessible(true);
