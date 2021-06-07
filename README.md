@@ -4,14 +4,14 @@
 [![YooMoney donation](https://img.shields.io/badge/donation-Yoo.money-blue.svg)](https://yoomoney.ru/to/41001158080699)
 
 # History
-In 2009 I had some free time during weekend and decided to try to develop small JVM interpreter in pure Java which could be used in J2ME CLDC 1.0 platform because the platform didn't have any ClassLoader support but it was very useful to load compiled class files through network and execute them. The Development of the "proof of concept" took about 3 days and worked with good speed even on Nokia 6100. The project was published as OSS project on my home page (titled as "M-JVM") and I even detected some interest from mobile software developers.  
+In 2009 during my vacation time I was playing with code and made experiments to develop pure Java JVM interpreter which could be compatible with J2ME CLDC 1.0 (it didn't provide any possibility to load external class, and the task was not only academic one). During three days the interpreter written, and I got some "proof of concept". The result worked well and more or less fast on Nokia 6100. Then I published the project as OSS one on my home page (titled as "M-JVM").  
 
-In 2015 I decided to rework my home page and removed the old project from there, but because it still can be useful for someone, I made refactored it and moved sources to GitHub under title J-J-JVM project. I made some improvements in the project, added support of inner classes, double and long values, added dozens of tests. The Library is tests for compatibility with Android API 2.0r1+.    
+In 2015, my home page was reworked and old projects were removed. But because such project can be still useful for someone (as minimum for learning purposes), I made refactoring and published its sources on GitHub under title J-J-JVM project. Some improvements were made in the published project: added support of inner classes, added support for double and long values, added dozens of tests. The library written in manner to be compatible with Android API 2.0r1+.    
 
-__The JVM interpreter doesn't contain any "Poka-yoke" (mistake-proofing) mechanism and verification of byte-code, it doesn't make any stack map verification and any requests or communication with Java security manager!__
+__The JVM interpreter doesn't contain any "Poka-yoke" (mistake-proofing) mechanism and verification of byte-code, it doesn't make any stack map verification and any requests or communication with Java security manager !__
 
 # Hello world
-For instance we have some class which prints "Hello world!" to the console.
+For instance, you can see below class writing just "Hello world!" on console.
 ```Java
 package com.igormaznitsa.testjjjvm;
 
@@ -21,7 +21,7 @@ public class HelloWorld {
   }
 }
 ```
-And we want to execute the main method within JJJVM. To Load the class body we use Javassist. But lets not just print the message but will catch it and make some processing.
+Let use Javassist to load the class but make some changes in its execution with J-J-JVM library.
 ```Java
 JJJVMProvider provider = new JSEProviderImpl(){
   @Override
@@ -36,7 +36,7 @@ JJJVMProvider provider = new JSEProviderImpl(){
 JJJVMClassImpl jjjvmClass = new JJJVMClassImpl(new ByteArrayInputStream(javassist.ClassPool.getDefault().get("com.igormaznitsa.testjjjvm.HelloWorld").toBytecode()), provider);
 jjjvmClass.findMethod("main", "([Ljava/lang/String;)V").invoke(null, null);
 ```
-And the code above will print
+and the code above will print
 ```
 <<Hello world!>>
 ```
