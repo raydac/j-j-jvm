@@ -1,7 +1,7 @@
 [![Java 5.0+](https://img.shields.io/badge/java-5.0%2b-green.svg)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%20License%202.0-green.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![PayPal donation](https://img.shields.io/badge/donation-PayPal-red.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=AHWJHJFBAWGL2)
-[![Yandex.Money donation](https://img.shields.io/badge/donation-Я.деньги-yellow.svg)](http://yasobe.ru/na/iamoss)
+[![PayPal donation](https://img.shields.io/badge/donation-PayPal-cyan.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=AHWJHJFBAWGL2)
+[![YooMoney donation](https://img.shields.io/badge/donation-Yoo.money-blue.svg)](https://yoomoney.ru/to/41001158080699)
 
 # History
 In 2009 I had some free time during weekend and decided to try to develop small JVM interpreter in pure Java which could be used in J2ME CLDC 1.0 platform because the platform didn't have any ClassLoader support but it was very useful to load compiled class files through network and execute them. The Development of the "proof of concept" took about 3 days and worked with good speed even on Nokia 6100. The project was published as OSS project on my home page (titled as "M-JVM") and I even detected some interest from mobile software developers.  
