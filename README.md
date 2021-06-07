@@ -4,11 +4,14 @@
 [![YooMoney donation](https://img.shields.io/badge/donation-Yoo.money-blue.svg)](https://yoomoney.ru/to/41001158080699)
 
 # History
-In 2009 during my vacation time I was playing with code and made experiments to develop pure Java JVM interpreter which could be compatible with J2ME CLDC 1.0 (it didn't provide any possibility to load external class, and the task was not only academic one). During three days the interpreter written, and I got some "proof of concept". The result worked well and more or less fast on Nokia 6100. Then I published the project as OSS one on my home page (titled as "M-JVM").  
+In 2009 during my vacation time I was playing with code and made experiments to develop pure Java JVM interpreter which could be compatible with J2ME CLDC 1.0 (it didn't provide any possibility to load external class, and the task was not only academic one). During three days the interpreter was successfully written, and I got some "proof of concept". The result worked well and more or less fast on Nokia 6100. Then I published the project as OSS one on my home page (titled as "M-JVM").  
 
 In 2015, my home page was reworked and old projects were removed. But because such project can be still useful for someone (as minimum for learning purposes), I made refactoring and published its sources on GitHub under title J-J-JVM project. Some improvements were made in the published project: added support of inner classes, added support for double and long values, added dozens of tests. The library written in manner to be compatible with Android API 2.0r1+.    
 
 __The JVM interpreter doesn't contain any "Poka-yoke" (mistake-proofing) mechanism and verification of byte-code, it doesn't make any stack map verification and any requests or communication with Java security manager !__
+
+# How to build
+It is a regular maven project and doesn't have any magic, just build through `mvn clean install` in the root of the project. __WARNING! THE PROJECT STRONGLY REQUIRES JDK 1.8 FOR BUILD!__
 
 # Hello world
 For instance, you can see below class writing just "Hello world!" on console.
