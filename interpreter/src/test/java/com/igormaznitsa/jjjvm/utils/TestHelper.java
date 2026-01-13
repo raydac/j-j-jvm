@@ -1,19 +1,29 @@
 package com.igormaznitsa.jjjvm.utils;
 
-import com.igormaznitsa.jjjvm.JJJVMInterpreter;
-import com.igormaznitsa.jjjvm.utils.Branch;
-import com.igormaznitsa.jjjvm.model.JJJVMMethod;
-import com.igormaznitsa.jjjvm.model.JJJVMClass;
-import com.igormaznitsa.jjjvm.model.JJJVMProvider;
-import com.igormaznitsa.jjjvm.model.JJJVMObject;
-import com.igormaznitsa.jjjvm.impl.JJJVMClassImpl;
-import java.io.*;
-import javassist.*;
-import org.apache.bcel.Constants;
-import org.apache.bcel.generic.*;
-import org.apache.commons.io.FileUtils;
-import org.junit.Assert;
+import static org.apache.bcel.Constants.ACC_PUBLIC;
+import static org.apache.bcel.Constants.ACC_STATIC;
 import static org.junit.Assert.assertEquals;
+
+import com.igormaznitsa.jjjvm.JJJVMInterpreter;
+import com.igormaznitsa.jjjvm.impl.JJJVMClassImpl;
+import com.igormaznitsa.jjjvm.model.JJJVMClass;
+import com.igormaznitsa.jjjvm.model.JJJVMMethod;
+import com.igormaznitsa.jjjvm.model.JJJVMObject;
+import com.igormaznitsa.jjjvm.model.JJJVMProvider;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtField;
+import javassist.CtNewMethod;
+import org.apache.bcel.generic.ClassGen;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.FieldGen;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.generic.Type;
+import org.junit.Assert;
 
 public abstract class TestHelper {
 
@@ -45,83 +55,90 @@ public abstract class TestHelper {
   protected static final float CONST_FLT_H = 1214.56f;
   protected static final long CONST_LNG_H = 1200567890L;
 
-  protected static JJJVMClassImpl prepareTestClass(final JJJVMProvider processor, final String method) throws Throwable {
+  protected static JJJVMClassImpl prepareTestClass(final JJJVMProvider processor,
+                                                   final String method) throws Throwable {
     final ClassPool classPool = ClassPool.getDefault();
     final CtClass clazz = classPool.makeClass("com.igormaznitsa.SyntheticMJVMTest");
     clazz.addField(CtField.make("public static int sfield;", clazz));
     clazz.addField(CtField.make("public int field = 123;", clazz));
     clazz.addMethod(CtNewMethod.make(method, clazz));
-    
-    final byte [] classBody = clazz.toBytecode();
-    
+
+    final byte[] classBody = clazz.toBytecode();
+
 //    FileUtils.writeByteArrayToFile(new File("/home/igorm/1/SyntheticMJVMTest.class"), classBody);
-    
-    final JJJVMClassImpl result = new JJJVMClassImpl(new ByteArrayInputStream(classBody), processor);
+
+    final JJJVMClassImpl result =
+        new JJJVMClassImpl(new ByteArrayInputStream(classBody), processor);
     clazz.detach();
     return result;
   }
 
-  protected static JJJVMClass loadClassFromClassPath(final JJJVMProvider provider, final String className) throws Throwable {
-    return new JJJVMClassImpl(new ByteArrayInputStream(loadClassBodyFromClassPath(className)), provider);
+  protected static JJJVMClass loadClassFromClassPath(final JJJVMProvider provider,
+                                                     final String className) throws Throwable {
+    return new JJJVMClassImpl(new ByteArrayInputStream(loadClassBodyFromClassPath(className)),
+        provider);
   }
-  
+
   protected static byte[] loadClassBodyFromClassPath(final String className) throws Throwable {
     final ClassPool classPool = ClassPool.getDefault();
     final CtClass klazz = classPool.get(className);
     return klazz.toBytecode();
   }
-  
-  protected static JJJVMClassImpl prepareTestClass(final JJJVMProvider processor, final Type type, final Object... instructions) throws Throwable {
-    final ClassGen clazzGen = new ClassGen("com.igormaznitsa.SyntheticMJVMTest", "java.lang.Object", "SyntheticMJVMTest.java", Constants.ACC_PUBLIC, null);
-    clazzGen.addEmptyConstructor(Constants.ACC_PUBLIC);
+
+  protected static JJJVMClassImpl prepareTestClass(final JJJVMProvider processor, final Type type,
+                                                   final Object... instructions) throws Throwable {
+    final ClassGen clazzGen = new ClassGen("com.igormaznitsa.SyntheticMJVMTest", "java.lang.Object",
+        "SyntheticMJVMTest.java", ACC_PUBLIC, null);
+    clazzGen.addEmptyConstructor(ACC_PUBLIC);
 
     final ConstantPoolGen cpg = clazzGen.getConstantPool();
-    Assert.assertEquals(CP_INT, cpg.addInteger(CONST_INT));
-    Assert.assertEquals(CP_CLASS, cpg.addClass(CONST_CLASS));
-    Assert.assertEquals(CP_STRING, cpg.addString(CONST_STR));
-    Assert.assertEquals(CP_DOUBLE, cpg.addDouble(CONST_DBL));
-    Assert.assertEquals(CP_FLOAT, cpg.addFloat(CONST_FLT));
-    Assert.assertEquals(CP_LONG, cpg.addLong(CONST_LNG));
+    assertEquals(CP_INT, cpg.addInteger(CONST_INT));
+    assertEquals(CP_CLASS, cpg.addClass(CONST_CLASS));
+    assertEquals(CP_STRING, cpg.addString(CONST_STR));
+    assertEquals(CP_DOUBLE, cpg.addDouble(CONST_DBL));
+    assertEquals(CP_FLOAT, cpg.addFloat(CONST_FLT));
+    assertEquals(CP_LONG, cpg.addLong(CONST_LNG));
 
     for (int i = 0; i < 300; i++) {
       cpg.addInteger(i + 11);
     }
 
-    Assert.assertEquals(CP_INT_H, cpg.addInteger(CONST_INT_H));
-    Assert.assertEquals(CP_CLASS_H, cpg.addClass(CONST_CLASS_H));
-    Assert.assertEquals(CP_STRING_H, cpg.addString(CONST_STR_H));
-    Assert.assertEquals(CP_DOUBLE_H, cpg.addDouble(CONST_DBL_H));
-    Assert.assertEquals(CP_FLOAT_H, cpg.addFloat(CONST_FLT_H));
-    Assert.assertEquals(CP_LONG_H, cpg.addLong(CONST_LNG_H));
+    assertEquals(CP_INT_H, cpg.addInteger(CONST_INT_H));
+    assertEquals(CP_CLASS_H, cpg.addClass(CONST_CLASS_H));
+    assertEquals(CP_STRING_H, cpg.addString(CONST_STR_H));
+    assertEquals(CP_DOUBLE_H, cpg.addDouble(CONST_DBL_H));
+    assertEquals(CP_FLOAT_H, cpg.addFloat(CONST_FLT_H));
+    assertEquals(CP_LONG_H, cpg.addLong(CONST_LNG_H));
 
     final InstructionList instructionList = new InstructionList();
     for (final Object i : instructions) {
-      if (i instanceof  Instruction){
-        instructionList.append((Instruction)i);
-      }
-      else if (i instanceof Branch){
-        instructionList.append(((Branch)i).getInstance());
+      if (i instanceof Instruction) {
+        instructionList.append((Instruction) i);
+      } else if (i instanceof Branch) {
+        instructionList.append(((Branch) i).getInstance());
       }
     }
-    
+
     instructionList.update();
     for (final Object i : instructions) {
       if (i instanceof Branch) {
-        ((Branch)i).update(instructionList);
+        ((Branch) i).update(instructionList);
       }
     }
-    
-    final MethodGen testMethod = new MethodGen(Constants.ACC_PUBLIC, type, new Type[]{type}, new String[]{"arg"}, "test", "com.igormaznitsa.SyntheticMJVMTest", instructionList, clazzGen.getConstantPool());
+
+    final MethodGen testMethod =
+        new MethodGen(ACC_PUBLIC, type, new Type[] {type}, new String[] {"arg"}, "test",
+            "com.igormaznitsa.SyntheticMJVMTest", instructionList, clazzGen.getConstantPool());
     testMethod.setMaxLocals(300);
     testMethod.setMaxStack(64);
 
     testMethod.update();
 
-    final FieldGen sfgen = new FieldGen(Constants.ACC_STATIC | Constants.ACC_PUBLIC, Type.INT, "sfield", cpg);
+    final FieldGen sfgen = new FieldGen(ACC_STATIC | ACC_PUBLIC, Type.INT, "sfield", cpg);
     clazzGen.addField(sfgen.getField());
-    
-    clazzGen.addField(new FieldGen(Constants.ACC_PUBLIC, Type.INT, "field", cpg).getField());
-    
+
+    clazzGen.addField(new FieldGen(ACC_PUBLIC, Type.INT, "field", cpg).getField());
+
     clazzGen.addMethod(testMethod.getMethod());
     clazzGen.update();
 
@@ -132,63 +149,54 @@ public abstract class TestHelper {
     return new JJJVMClassImpl(new ByteArrayInputStream(buffer.toByteArray()), processor);
   }
 
-  protected <K> K executeTestMethod(final JJJVMClass clazz, final Class<K> type, final Object[] stack, final Object... args) throws Throwable {
+  protected <K> K executeTestMethod(final JJJVMClass clazz, final Class<K> type,
+                                    final Object[] stack, final Object... args) throws Throwable {
     final JJJVMObject obj = clazz.newInstance(true);
 
     final Type bceltype;
 
     if (type == Integer.class) {
       bceltype = Type.INT;
-    }
-    else if (type == Byte.class) {
+    } else if (type == Byte.class) {
       bceltype = Type.BYTE;
-    }
-    else if (type == Short.class) {
+    } else if (type == Short.class) {
       bceltype = Type.SHORT;
-    }
-    else if (type == Character.class) {
+    } else if (type == Character.class) {
       bceltype = Type.CHAR;
-    }
-    else if (type == Long.class) {
+    } else if (type == Long.class) {
       bceltype = Type.LONG;
-    }
-    else if (type == Float.class) {
+    } else if (type == Float.class) {
       bceltype = Type.FLOAT;
-    }
-    else if (type == Double.class) {
+    } else if (type == Double.class) {
       bceltype = Type.DOUBLE;
-    }
-    else if (type == Boolean.class) {
+    } else if (type == Boolean.class) {
       bceltype = Type.BOOLEAN;
-    }
-    else {
+    } else {
       bceltype = Type.getType(type);
     }
 
-    final JJJVMMethod method = clazz.findDeclaredMethod("test", "(" + bceltype.getSignature() + ")" + bceltype.getSignature());
+    final JJJVMMethod method = clazz.findDeclaredMethod("test",
+        "(" + bceltype.getSignature() + ")" + bceltype.getSignature());
     Assert.assertNotNull("Method not found", method);
 
     Object result = JJJVMInterpreter.invoke(clazz, obj, method, args, stack, null);
 
     if (type == Byte.class) {
-      result = ((Integer)result).byteValue();
-    }else
-    if (type == Short.class) {
-      result = ((Integer)result).shortValue();
-    }else
-    if (type == Character.class) {
-      result = (char)((Integer)result).shortValue();
-    }else
-    if (type == Boolean.class) {
-      result = ((Integer)result).byteValue()!=0;
+      result = ((Integer) result).byteValue();
+    } else if (type == Short.class) {
+      result = ((Integer) result).shortValue();
+    } else if (type == Character.class) {
+      result = (char) ((Integer) result).shortValue();
+    } else if (type == Boolean.class) {
+      result = ((Integer) result).byteValue() != 0;
     }
     return type.cast(result);
   }
 
-  protected void assertStack(final Object [] etalon, final Object [] stack){
-    for(int i=0;i<etalon.length;i++){
+  protected void assertStack(final Object[] etalon, final Object[] stack) {
+    for (int i = 0; i < etalon.length; i++) {
       assertEquals(etalon[i], stack[i]);
     }
   }
-  
+
 }

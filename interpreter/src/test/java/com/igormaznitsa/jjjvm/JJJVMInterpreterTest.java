@@ -1,5 +1,15 @@
 package com.igormaznitsa.jjjvm;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.igormaznitsa.jjjvm.impl.JJJVMClassImpl;
 import com.igormaznitsa.jjjvm.impl.jse.JSEProviderImpl;
 import com.igormaznitsa.jjjvm.model.JJJVMClass;
@@ -10,10 +20,6 @@ import com.igormaznitsa.jjjvm.testclasses.TestObject;
 import com.igormaznitsa.jjjvm.utils.Branch;
 import com.igormaznitsa.jjjvm.utils.TestHelper;
 import com.igormaznitsa.jjjvm.utils.TestProviderImpl;
-import org.apache.bcel.generic.*;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,8 +28,98 @@ import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static org.junit.Assert.*;
+import org.apache.bcel.generic.ACONST_NULL;
+import org.apache.bcel.generic.ALOAD;
+import org.apache.bcel.generic.ARETURN;
+import org.apache.bcel.generic.ARRAYLENGTH;
+import org.apache.bcel.generic.ASTORE;
+import org.apache.bcel.generic.ATHROW;
+import org.apache.bcel.generic.BIPUSH;
+import org.apache.bcel.generic.CHECKCAST;
+import org.apache.bcel.generic.D2F;
+import org.apache.bcel.generic.D2I;
+import org.apache.bcel.generic.D2L;
+import org.apache.bcel.generic.DCMPG;
+import org.apache.bcel.generic.DCMPL;
+import org.apache.bcel.generic.DCONST;
+import org.apache.bcel.generic.DLOAD;
+import org.apache.bcel.generic.DNEG;
+import org.apache.bcel.generic.DRETURN;
+import org.apache.bcel.generic.DSTORE;
+import org.apache.bcel.generic.DUP;
+import org.apache.bcel.generic.DUP2;
+import org.apache.bcel.generic.DUP2_X1;
+import org.apache.bcel.generic.DUP2_X2;
+import org.apache.bcel.generic.DUP_X1;
+import org.apache.bcel.generic.DUP_X2;
+import org.apache.bcel.generic.F2D;
+import org.apache.bcel.generic.F2I;
+import org.apache.bcel.generic.F2L;
+import org.apache.bcel.generic.FCMPG;
+import org.apache.bcel.generic.FCMPL;
+import org.apache.bcel.generic.FCONST;
+import org.apache.bcel.generic.FLOAD;
+import org.apache.bcel.generic.FNEG;
+import org.apache.bcel.generic.FRETURN;
+import org.apache.bcel.generic.FSTORE;
+import org.apache.bcel.generic.GOTO;
+import org.apache.bcel.generic.GOTO_W;
+import org.apache.bcel.generic.I2B;
+import org.apache.bcel.generic.I2C;
+import org.apache.bcel.generic.I2D;
+import org.apache.bcel.generic.I2F;
+import org.apache.bcel.generic.I2L;
+import org.apache.bcel.generic.I2S;
+import org.apache.bcel.generic.ICONST;
+import org.apache.bcel.generic.IFEQ;
+import org.apache.bcel.generic.IFGE;
+import org.apache.bcel.generic.IFGT;
+import org.apache.bcel.generic.IFLE;
+import org.apache.bcel.generic.IFLT;
+import org.apache.bcel.generic.IFNE;
+import org.apache.bcel.generic.IFNONNULL;
+import org.apache.bcel.generic.IFNULL;
+import org.apache.bcel.generic.IF_ACMPEQ;
+import org.apache.bcel.generic.IF_ACMPNE;
+import org.apache.bcel.generic.IF_ICMPEQ;
+import org.apache.bcel.generic.IF_ICMPGE;
+import org.apache.bcel.generic.IF_ICMPGT;
+import org.apache.bcel.generic.IF_ICMPLE;
+import org.apache.bcel.generic.IF_ICMPLT;
+import org.apache.bcel.generic.IF_ICMPNE;
+import org.apache.bcel.generic.IINC;
+import org.apache.bcel.generic.ILOAD;
+import org.apache.bcel.generic.INEG;
+import org.apache.bcel.generic.INSTANCEOF;
+import org.apache.bcel.generic.IRETURN;
+import org.apache.bcel.generic.ISTORE;
+import org.apache.bcel.generic.JSR;
+import org.apache.bcel.generic.L2D;
+import org.apache.bcel.generic.L2F;
+import org.apache.bcel.generic.L2I;
+import org.apache.bcel.generic.LCMP;
+import org.apache.bcel.generic.LCONST;
+import org.apache.bcel.generic.LDC;
+import org.apache.bcel.generic.LDC2_W;
+import org.apache.bcel.generic.LDC_W;
+import org.apache.bcel.generic.LLOAD;
+import org.apache.bcel.generic.LNEG;
+import org.apache.bcel.generic.LRETURN;
+import org.apache.bcel.generic.LSTORE;
+import org.apache.bcel.generic.MONITORENTER;
+import org.apache.bcel.generic.MONITOREXIT;
+import org.apache.bcel.generic.MULTIANEWARRAY;
+import org.apache.bcel.generic.NEWARRAY;
+import org.apache.bcel.generic.NOP;
+import org.apache.bcel.generic.POP;
+import org.apache.bcel.generic.POP2;
+import org.apache.bcel.generic.RET;
+import org.apache.bcel.generic.RETURN;
+import org.apache.bcel.generic.SIPUSH;
+import org.apache.bcel.generic.SWAP;
+import org.apache.bcel.generic.Type;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.ClassDataLoader {
 
@@ -1080,10 +1176,11 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
   @Test
   public void test_WIDE_JSR_RET() throws Throwable {
     final Object[] stack = new Object[100];
-    final List<Object> instr = new ArrayList<Object>();
-    instr.add(new Branch(JSR.class, 2 + 65535));
+    final List<Object> instr = new ArrayList<>();
+    instr.add(new Branch(JSR.class, 2 + 33000));
     instr.add(new RETURN());
-    for (int i = 0; i < 65535; i++) {
+
+    for (int i = 0; i < 33000; i++) {
       instr.add(new NOP());
     }
     instr.add(new ASTORE(288));
@@ -1514,7 +1611,6 @@ public class JJJVMInterpreterTest extends TestHelper implements JSEProviderImpl.
     final JJJVMProvider provider = new JSEProviderImpl(this);
     final JJJVMClass testKlazz = loadClassFromClassPath(provider, "com/igormaznitsa/jjjvm/testclasses/TestInnerClasses$NonStaticClass");
 
-    assertEquals("must be Java 1.5", 0x0031, testKlazz.getClassFormatVersion());
     assertEquals("com/igormaznitsa/jjjvm/testclasses/TestInnerClasses$NonStaticClass", testKlazz.getClassName());
     assertEquals("com.igormaznitsa.jjjvm.testclasses.TestInnerClasses$NonStaticClass", testKlazz.getName());
     assertEquals("com.igormaznitsa.jjjvm.testclasses.TestInnerClasses.NonStaticClass", testKlazz.getCanonicalName());

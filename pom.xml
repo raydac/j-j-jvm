@@ -12,8 +12,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.5</maven.compiler.source>
-    <maven.compiler.target>1.5</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
   </properties>
 
   <inceptionYear>2009</inceptionYear>
@@ -42,7 +42,7 @@
       <roles>
         <role>author</role>
       </roles>
-      <url>http://www.igormaznitsa.com</url>
+      <url>https://www.igormaznitsa.com</url>
       <email>rrg4400@gmail.com</email>
     </developer>
   </developers>
