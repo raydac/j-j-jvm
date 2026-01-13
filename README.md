@@ -18,7 +18,9 @@ dozens of additional tests.
 __The JVM interpreter doesn't contain any "Poka-yoke" (mistake-proofing) mechanism and verification of byte-code, it doesn't make any stack map verification and any requests or communication with Java security manager !__
 
 # How to build
-It is a regular maven project and doesn't have any magic, just build through `mvn clean install` in the root of the project. __WARNING! THE PROJECT STRONGLY REQUIRES JDK 1.8 FOR BUILD!__
+
+It is a regular maven project and doesn't have any magic, just build through `mvn clean install` in the root of the
+project.
 
 # Hello world
 For instance, you can see below class writing just "Hello world!" on console.
