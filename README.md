@@ -1,12 +1,19 @@
-[![Java 5.0+](https://img.shields.io/badge/java-5.0%2b-green.svg)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+[![Java 11.0+](https://img.shields.io/badge/java-11.0%2b-green.svg)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%20License%202.0-green.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![PayPal donation](https://img.shields.io/badge/donation-PayPal-cyan.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=AHWJHJFBAWGL2)
 [![YooMoney donation](https://img.shields.io/badge/donation-Yoo.money-blue.svg)](https://yoomoney.ru/to/41001158080699)
 
 # History
-In 2009 during my vacation time I was playing with code and made experiments to develop pure Java JVM interpreter which could be compatible with J2ME CLDC 1.0 (it didn't provide any possibility to load external class, and the task was not only academic one). During three days the interpreter was successfully written, and I got some "proof of concept". The result worked well and more or less fast on Nokia 6100. Then I published the project as OSS one on my home page (titled as "M-JVM").  
 
-In 2015, my home page was reworked and old projects were removed. But because such project can be still useful for someone (as minimum for learning purposes), I made refactoring and published its sources on GitHub under title J-J-JVM project. Some improvements were made in the published project: added support of inner classes, added support for double and long values, added dozens of tests. The library written in manner to be compatible with Android API 2.0r1+.    
+In 2009, during my vacation, I was experimenting with code and developed a pure Java JVM interpreter compatible with
+J2ME CLDC 1.0. This version didn’t support loading external classes, and the task was not purely academic. Within three
+days, I had successfully written the interpreter and produced a proof of concept. The result worked well and ran
+reasonably fast on a Nokia 6100. I then published the project as open source on my homepage under the name M-JVM.
+
+In 2015, my homepage was redesigned and the old projects were removed. Since I believed this project could still be
+useful—at least for learning purposes—I refactored it and published the source code on GitHub under the name J-J-JVM.
+The updated version included several improvements: support for inner classes, support for double and long values, and
+dozens of additional tests.
 
 __The JVM interpreter doesn't contain any "Poka-yoke" (mistake-proofing) mechanism and verification of byte-code, it doesn't make any stack map verification and any requests or communication with Java security manager !__
 
